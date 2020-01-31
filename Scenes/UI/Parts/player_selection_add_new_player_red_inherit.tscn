@@ -1,0 +1,40 @@
+[gd_scene load_steps=7 format=2]
+
+[ext_resource path="res://Scenes/UI/Parts/ui_player_selection_add_player.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Asset/UI/player_selection_background.png" type="Texture" id=2]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+uniform sampler2D gradient_color: hint_albedo; 
+
+void fragment()
+{
+	vec4 tex = texture(TEXTURE,UV);
+	float tex_to_grey = (tex.r+tex.g+tex.b)*0.33;
+	vec4 grey_to_gradient = texture(gradient_color, vec2(tex_to_grey, 0.0));
+	
+	COLOR.rgb = grey_to_gradient.rgb;
+	COLOR.a = tex.a;
+	
+}"
+
+[sub_resource type="Gradient" id=2]
+colors = PoolColorArray( 0.45098, 0.0235294, 0, 1, 1, 1, 1, 1 )
+
+[sub_resource type="GradientTexture" id=3]
+gradient = SubResource( 2 )
+width = 256
+
+[sub_resource type="ShaderMaterial" id=4]
+shader = SubResource( 1 )
+shader_param/gradient_color = SubResource( 3 )
+
+[node name="player_selection_add_new_player_red" index="0" instance=ExtResource( 1 )]
+texture_normal = ExtResource( 2 )
+
+[node name="Label2" parent="Player_Name" index="0"]
+custom_colors/font_color = Color( 0.686275, 0.294118, 0.27451, 1 )
+
+[node name="TextureButton" parent="." index="1"]
+material = SubResource( 4 )

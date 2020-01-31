@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://Asset/Font/DynamicFont1_MVP-Font-1.res" type="DynamicFont" id=1]
+
+
+[node name="PlaceholderLabel" type="Label"]
+margin_right = 16.0
+margin_bottom = 31.0
+custom_fonts/font = ExtResource( 1 )
+text = "PlaceholderLabel"

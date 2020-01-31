@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://Scenes/UI/Parts/player_assign_controls.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Asset/Material/UI/player_inner_background_blue.material" type="Material" id=2]
+
+[node name="player_assign_controls_blue_inherited" index="0" instance=ExtResource( 1 )]
+self_modulate = Color( 0.0352941, 0.380392, 0.631373, 0.470588 )
+
+[node name="Panel" parent="." index="0"]
+material = ExtResource( 2 )

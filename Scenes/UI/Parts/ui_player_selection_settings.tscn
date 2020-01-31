@@ -1,0 +1,476 @@
+[gd_scene load_steps=26 format=2]
+
+[ext_resource path="res://Scenes/UI/dummy_tex.png" type="Texture" id=1]
+[ext_resource path="res://Asset/Font/MVP-Font-1_2_2.ttf" type="DynamicFontData" id=2]
+[ext_resource path="res://Asset/Sound/AudioStreamPlayer_LineEdit.tscn" type="PackedScene" id=3]
+[ext_resource path="res://Asset/UI/ui_player_settings_background.png" type="Texture" id=4]
+[ext_resource path="res://Asset/Script/UI/ui_player_selection_settings.gd" type="Script" id=5]
+[ext_resource path="res://Asset/Sound/AudioStreamPlayer_Button_small.tscn" type="PackedScene" id=6]
+[ext_resource path="res://Asset/UI/ui_disabled.png" type="Texture" id=7]
+[ext_resource path="res://Asset/Model/Player.tscn" type="PackedScene" id=8]
+[ext_resource path="res://Asset/Material/UI/appearance_arrow.material" type="Material" id=9]
+[ext_resource path="res://Asset/UI/Placeholder/arrow2.png" type="Texture" id=10]
+[ext_resource path="res://Scenes/UI/Parts/ui_assign_controls.tscn" type="PackedScene" id=11]
+
+[sub_resource type="DynamicFont" id=1]
+size = 20
+font_data = ExtResource( 2 )
+
+[sub_resource type="DynamicFont" id=2]
+font_data = ExtResource( 2 )
+
+[sub_resource type="DynamicFontData" id=3]
+font_path = "res://Asset/Font/MVP-Font-1_2_2.ttf"
+
+[sub_resource type="DynamicFont" id=4]
+font_data = SubResource( 3 )
+
+[sub_resource type="DynamicFontData" id=5]
+font_path = "res://Asset/Font/MVP-Font-1_2_2.ttf"
+
+[sub_resource type="DynamicFont" id=6]
+size = 12
+font_data = SubResource( 5 )
+
+[sub_resource type="DynamicFont" id=7]
+font_data = ExtResource( 2 )
+
+[sub_resource type="GDScript" id=8]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends VBoxContainer
+
+export (Material) var body_material = null
+export (Material) var hat_material = null
+
+var moustache_string = \"Moustache\"
+var beard_id = 1
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	if body_material:
+		$HBoxContainer/Viewport/Player/armature_player/player_body.material_override = body_material
+	if hat_material:
+		$HBoxContainer/Viewport/Player/armature_player/player_hat.material_override = hat_material
+
+func get_beard():
+	return moustache_string+str(beard_id)
+
+func update_beard():
+	$HBoxContainer/Viewport/Player/armature_player/player_moustache.visible = false
+	$HBoxContainer/Viewport/Player/armature_player/player_moustache_whitebeard_newgate.visible = false
+	$HBoxContainer/Viewport/Player/armature_player/player_beard_1001.visible = false
+	$HBoxContainer/Viewport/Player/armature_player/player_beard_2001.visible = false
+	$HBoxContainer/Viewport/Player/armature_player/player_beard_3001.visible = false
+	match get_beard():
+		\"Moustache1\":
+			$HBoxContainer/Viewport/Player/armature_player/player_moustache.visible = true
+			$HBoxContainer/Viewport/Player/armature_player/player_beard_1001.visible = true
+		\"Moustache2\":
+			$HBoxContainer/Viewport/Player/armature_player/player_moustache.visible = true
+			$HBoxContainer/Viewport/Player/armature_player/player_beard_2001.visible = true
+		\"Moustache3\":
+			$HBoxContainer/Viewport/Player/armature_player/player_moustache.visible = true
+			$HBoxContainer/Viewport/Player/armature_player/player_beard_3001.visible = true
+		\"MoustacheWhitebeardNewgate1\":
+			$HBoxContainer/Viewport/Player/armature_player/player_beard_1001.visible = true
+			$HBoxContainer/Viewport/Player/armature_player/player_moustache_whitebeard_newgate.visible = true
+		\"MoustacheWhitebeardNewgate2\":
+			$HBoxContainer/Viewport/Player/armature_player/player_beard_2001.visible = true
+			$HBoxContainer/Viewport/Player/armature_player/player_moustache_whitebeard_newgate.visible = true
+		\"MoustacheWhitebeardNewgate3\":
+			$HBoxContainer/Viewport/Player/armature_player/player_beard_3001.visible = true
+			$HBoxContainer/Viewport/Player/armature_player/player_moustache_whitebeard_newgate.visible = true
+
+
+func _on_Moustache_Button_pressed():
+	if moustache_string == \"Moustache\":
+		moustache_string = \"MoustacheWhitebeardNewgate\"
+	else:
+		moustache_string = \"Moustache\"
+	update_beard()
+
+
+func _on_Beard_Button_pressed():
+	beard_id += 1
+	if beard_id >=4:
+		beard_id = 1
+	update_beard()
+"
+
+[sub_resource type="DynamicFontData" id=9]
+font_path = "res://Asset/Font/MVP-Font-1_2_2.ttf"
+
+[sub_resource type="DynamicFont" id=10]
+size = 18
+font_data = SubResource( 9 )
+
+[sub_resource type="ProceduralSky" id=11]
+
+[sub_resource type="Environment" id=12]
+background_mode = 3
+background_sky = SubResource( 11 )
+background_energy = 0.6
+
+[sub_resource type="ViewportTexture" id=13]
+viewport_path = NodePath("VBoxContainer2/HBoxContainer/Viewport")
+
+[sub_resource type="DynamicFont" id=14]
+font_data = ExtResource( 2 )
+
+[node name="player_selection_settings" type="TextureRect"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -640.0
+margin_top = -360.0
+margin_right = -90.0
+margin_bottom = -60.0
+rect_min_size = Vector2( 550, 300 )
+texture = ExtResource( 1 )
+expand = true
+stretch_mode = 1
+
+[node name="Player_Name" type="VBoxContainer" parent="."]
+editor/display_folded = true
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -90.0
+margin_top = 32.3037
+margin_right = 90.0
+margin_bottom = 82.3037
+rect_min_size = Vector2( 180, 50 )
+alignment = 1
+
+[node name="Label2" type="Label" parent="Player_Name"]
+margin_right = 180.0
+margin_bottom = 20.0
+custom_fonts/font = SubResource( 1 )
+custom_colors/font_color = Color( 1, 1, 1, 1 )
+text = "Name..."
+align = 1
+
+[node name="LineEdit" type="LineEdit" parent="Player_Name"]
+margin_top = 24.0
+margin_right = 180.0
+margin_bottom = 50.0
+custom_fonts/font = SubResource( 2 )
+custom_colors/font_color = Color( 1, 0.956863, 0.854902, 1 )
+align = 1
+placeholder_text = "Brownie"
+caret_blink = true
+caret_blink_speed = 0.5
+
+[node name="AudioStreamPlayer_Button_small" parent="Player_Name/LineEdit" instance=ExtResource( 3 )]
+
+[node name="TextureRect" type="TextureRect" parent="."]
+editor/display_folded = true
+self_modulate = Color( 0.843137, 0.843137, 0.843137, 1 )
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = 53.5616
+margin_top = -146.113
+margin_right = 213.562
+margin_bottom = -21.1135
+texture = ExtResource( 4 )
+expand = true
+stretch_mode = 1
+script = ExtResource( 5 )
+player_checkbox = NodePath("ui_controlled_by/MarginContainer/VBoxContainer3/VBoxContainer/CheckBox")
+ai_checkbox = NodePath("ui_controlled_by/MarginContainer/VBoxContainer3/VBoxContainer2/CheckBox")
+
+[node name="ui_controlled_by" type="VBoxContainer" parent="TextureRect"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+rect_min_size = Vector2( 150, 100 )
+alignment = 1
+
+[node name="Label" type="Label" parent="TextureRect/ui_controlled_by"]
+margin_top = 12.0
+margin_right = 160.0
+margin_bottom = 28.0
+custom_fonts/font = SubResource( 4 )
+text = "Controlled by..."
+align = 1
+valign = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="TextureRect/ui_controlled_by"]
+margin_top = 32.0
+margin_right = 160.0
+margin_bottom = 78.0
+custom_constants/margin_left = 15
+
+[node name="VBoxContainer3" type="VBoxContainer" parent="TextureRect/ui_controlled_by/MarginContainer"]
+margin_left = 15.0
+margin_right = 160.0
+margin_bottom = 46.0
+custom_constants/separation = -2
+
+[node name="VBoxContainer" type="HBoxContainer" parent="TextureRect/ui_controlled_by/MarginContainer/VBoxContainer3"]
+margin_right = 145.0
+margin_bottom = 24.0
+
+[node name="CheckBox" type="CheckBox" parent="TextureRect/ui_controlled_by/MarginContainer/VBoxContainer3/VBoxContainer"]
+margin_right = 24.0
+margin_bottom = 24.0
+
+[node name="AudioStreamPlayer_Button_small" parent="TextureRect/ui_controlled_by/MarginContainer/VBoxContainer3/VBoxContainer/CheckBox" instance=ExtResource( 6 )]
+
+[node name="Label" type="Label" parent="TextureRect/ui_controlled_by/MarginContainer/VBoxContainer3/VBoxContainer"]
+margin_left = 28.0
+margin_top = 5.0
+margin_right = 61.0
+margin_bottom = 18.0
+custom_fonts/font = SubResource( 6 )
+text = "Player"
+
+[node name="VBoxContainer2" type="HBoxContainer" parent="TextureRect/ui_controlled_by/MarginContainer/VBoxContainer3"]
+margin_top = 22.0
+margin_right = 145.0
+margin_bottom = 46.0
+
+[node name="CheckBox" type="CheckBox" parent="TextureRect/ui_controlled_by/MarginContainer/VBoxContainer3/VBoxContainer2"]
+margin_right = 24.0
+margin_bottom = 24.0
+pressed = true
+
+[node name="AudioStreamPlayer_Button_small" parent="TextureRect/ui_controlled_by/MarginContainer/VBoxContainer3/VBoxContainer2/CheckBox" instance=ExtResource( 6 )]
+
+[node name="Label" type="Label" parent="TextureRect/ui_controlled_by/MarginContainer/VBoxContainer3/VBoxContainer2"]
+margin_left = 28.0
+margin_top = 5.0
+margin_right = 36.0
+margin_bottom = 18.0
+custom_fonts/font = SubResource( 6 )
+text = "AI"
+
+[node name="MarginContainer2" type="MarginContainer" parent="TextureRect/ui_controlled_by"]
+margin_top = 82.0
+margin_right = 160.0
+margin_bottom = 112.0
+custom_constants/margin_right = 20
+custom_constants/margin_left = 20
+
+[node name="TextureButton" type="TextureButton" parent="TextureRect/ui_controlled_by/MarginContainer2"]
+margin_left = 20.0
+margin_right = 140.0
+margin_bottom = 30.0
+rect_min_size = Vector2( 100, 30 )
+texture_normal = ExtResource( 4 )
+expand = true
+
+[node name="VBoxContainer" type="HBoxContainer" parent="TextureRect/ui_controlled_by/MarginContainer2/TextureButton"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -41.5
+margin_top = -11.0
+margin_right = 41.5
+margin_bottom = 11.0
+alignment = 1
+
+[node name="Button" type="Button" parent="TextureRect/ui_controlled_by/MarginContainer2/TextureButton/VBoxContainer"]
+margin_right = 64.0
+margin_bottom = 22.0
+custom_fonts/font = SubResource( 7 )
+text = "Remove"
+flat = true
+
+[node name="AudioStreamPlayer_Button_small" parent="TextureRect/ui_controlled_by/MarginContainer2/TextureButton/VBoxContainer/Button" instance=ExtResource( 6 )]
+
+[node name="TextureRect" type="TextureRect" parent="TextureRect/ui_controlled_by/MarginContainer2/TextureButton/VBoxContainer"]
+margin_left = 68.0
+margin_right = 83.0
+margin_bottom = 22.0
+rect_min_size = Vector2( 15, 15 )
+texture = ExtResource( 7 )
+expand = true
+stretch_mode = 6
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="."]
+editor/display_folded = true
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = -212.0
+margin_top = -163.0
+margin_right = 38.0
+margin_bottom = -23.0
+rect_min_size = Vector2( 250, 140 )
+alignment = 1
+script = SubResource( 8 )
+
+[node name="Label" type="Label" parent="VBoxContainer2"]
+margin_top = 7.0
+margin_right = 250.0
+margin_bottom = 25.0
+custom_fonts/font = SubResource( 10 )
+text = "Appearance..."
+align = 1
+valign = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer2"]
+margin_top = 29.0
+margin_right = 250.0
+margin_bottom = 133.0
+alignment = 1
+
+[node name="Viewport" type="Viewport" parent="VBoxContainer2/HBoxContainer"]
+size = Vector2( 200, 200 )
+own_world = true
+transparent_bg = true
+render_target_v_flip = true
+
+[node name="Camera" type="Camera" parent="VBoxContainer2/HBoxContainer/Viewport"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.50496, 5.0938 )
+projection = 1
+current = true
+size = 4.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="VBoxContainer2/HBoxContainer/Viewport"]
+environment = SubResource( 12 )
+
+[node name="Player" parent="VBoxContainer2/HBoxContainer/Viewport" instance=ExtResource( 8 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.00114, 0 )
+
+[node name="TextureRect3" type="TextureRect" parent="VBoxContainer2/HBoxContainer"]
+self_modulate = Color( 0.67451, 0.67451, 0.67451, 1 )
+margin_left = 8.0
+margin_right = 108.0
+margin_bottom = 104.0
+rect_min_size = Vector2( 100, 104 )
+texture = SubResource( 13 )
+expand = true
+stretch_mode = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer2/HBoxContainer"]
+margin_left = 112.0
+margin_right = 241.0
+margin_bottom = 104.0
+
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer2/HBoxContainer/VBoxContainer"]
+self_modulate = Color( 0.647059, 0.647059, 0.647059, 1 )
+margin_right = 129.89
+margin_bottom = 50.0
+rect_min_size = Vector2( 129.89, 50 )
+texture = ExtResource( 4 )
+expand = true
+stretch_mode = 1
+
+[node name="Button" type="Button" parent="VBoxContainer2/HBoxContainer/VBoxContainer/TextureRect"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 5.0
+custom_fonts/font = SubResource( 14 )
+text = "Moustache"
+flat = true
+align = 0
+
+[node name="AudioStreamPlayer_Button_small" parent="VBoxContainer2/HBoxContainer/VBoxContainer/TextureRect/Button" instance=ExtResource( 6 )]
+
+[node name="AppearanceArrowRight" type="TextureRect" parent="VBoxContainer2/HBoxContainer/VBoxContainer/TextureRect/Button"]
+material = ExtResource( 9 )
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+margin_left = -34.89
+margin_top = -7.5
+margin_right = -19.89
+margin_bottom = 7.5
+texture = ExtResource( 10 )
+expand = true
+stretch_mode = 1
+
+[node name="TextureRect2" type="TextureRect" parent="VBoxContainer2/HBoxContainer/VBoxContainer"]
+self_modulate = Color( 0.647059, 0.647059, 0.647059, 1 )
+margin_top = 54.0
+margin_right = 129.89
+margin_bottom = 104.0
+rect_min_size = Vector2( 129.89, 50 )
+texture = ExtResource( 4 )
+expand = true
+stretch_mode = 1
+
+[node name="Button" type="Button" parent="VBoxContainer2/HBoxContainer/VBoxContainer/TextureRect2"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 5.0
+custom_fonts/font = SubResource( 14 )
+text = "Beard"
+flat = true
+align = 0
+
+[node name="AudioStreamPlayer_Button_small" parent="VBoxContainer2/HBoxContainer/VBoxContainer/TextureRect2/Button" instance=ExtResource( 6 )]
+
+[node name="AppearanceArrowRight2" type="TextureRect" parent="VBoxContainer2/HBoxContainer/VBoxContainer/TextureRect2/Button"]
+material = ExtResource( 9 )
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+margin_left = -34.89
+margin_top = -7.5
+margin_right = -19.89
+margin_bottom = 7.5
+texture = ExtResource( 10 )
+expand = true
+stretch_mode = 1
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="VBoxContainer2/HBoxContainer"]
+visible = false
+margin_left = 204.0
+margin_right = 254.0
+margin_bottom = 104.0
+
+[node name="TextureRect3" type="TextureRect" parent="VBoxContainer2/HBoxContainer/VBoxContainer2"]
+self_modulate = Color( 0.647059, 0.647059, 0.647059, 1 )
+margin_right = 50.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 50, 50 )
+texture = ExtResource( 1 )
+expand = true
+stretch_mode = 1
+
+[node name="TextureRect4" type="TextureRect" parent="VBoxContainer2/HBoxContainer/VBoxContainer2"]
+self_modulate = Color( 0.647059, 0.647059, 0.647059, 1 )
+margin_top = 54.0
+margin_right = 50.0
+margin_bottom = 104.0
+rect_min_size = Vector2( 50, 50 )
+texture = ExtResource( 1 )
+expand = true
+stretch_mode = 1
+
+[node name="TextureButton" parent="." instance=ExtResource( 11 )]
+editor/display_folded = true
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -175.0
+margin_top = -61.4269
+margin_right = 175.0
+margin_bottom = -31.4269
+
+[node name="Button" parent="TextureButton/Assign_Controls" index="0"]
+margin_left = -0.857361
+margin_right = -0.857361
+[connection signal="toggled" from="TextureRect/ui_controlled_by/MarginContainer/VBoxContainer3/VBoxContainer/CheckBox" to="TextureRect" method="_on_Player_CheckBox_toggled"]
+[connection signal="toggled" from="TextureRect/ui_controlled_by/MarginContainer/VBoxContainer3/VBoxContainer2/CheckBox" to="TextureRect" method="_on_AI_CheckBox_toggled"]
+[connection signal="pressed" from="TextureRect/ui_controlled_by/MarginContainer2/TextureButton/VBoxContainer/Button" to="." method="_on_remove_Button_pressed"]
+[connection signal="pressed" from="VBoxContainer2/HBoxContainer/VBoxContainer/TextureRect/Button" to="VBoxContainer2" method="_on_Moustache_Button_pressed"]
+[connection signal="pressed" from="VBoxContainer2/HBoxContainer/VBoxContainer/TextureRect2/Button" to="VBoxContainer2" method="_on_Beard_Button_pressed"]
+[connection signal="pressed" from="TextureButton/Assign_Controls/Button" to="." method="on_assign_controls_button_pressed"]
+
+[editable path="TextureButton"]

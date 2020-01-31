@@ -1,0 +1,27 @@
+[gd_resource type="ShaderMaterial" load_steps=4 format=2]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+uniform sampler2D color_gradient: hint_albedo;
+
+void fragment()
+{
+	vec4 tex = texture(TEXTURE,UV);
+	vec4 grey_to_color_gradient = texture(color_gradient, vec2(tex.x,0.0));
+	
+	COLOR.rgb = grey_to_color_gradient.rgb;
+	COLOR.a = tex.a;
+}"
+
+[sub_resource type="Gradient" id=2]
+offsets = PoolRealArray( 0 )
+colors = PoolColorArray( 0.144257, 0.166762, 0.226563, 0 )
+
+[sub_resource type="GradientTexture" id=3]
+gradient = SubResource( 2 )
+width = 256
+
+[resource]
+shader = SubResource( 1 )
+shader_param/color_gradient = SubResource( 3 )

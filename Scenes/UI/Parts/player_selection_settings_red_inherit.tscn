@@ -1,0 +1,104 @@
+[gd_scene load_steps=14 format=2]
+
+[ext_resource path="res://Scenes/UI/Parts/ui_player_selection_settings.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Asset/UI/player_selection_background.png" type="Texture" id=2]
+[ext_resource path="res://Asset/Script/UI/player_selection_slot.gd" type="Script" id=3]
+[ext_resource path="res://Asset/Material/UI/player_inner_background_red.material" type="Material" id=4]
+[ext_resource path="res://Asset/Material/Player/TeamRed/player_body_red.material" type="Material" id=5]
+[ext_resource path="res://Asset/Material/Player/TeamRed/player_hat_red.material" type="Material" id=6]
+[ext_resource path="res://Scenes/UI/Parts/player_assign_controls_red_inherited.tscn" type="PackedScene" id=7]
+[ext_resource path="res://Scenes/UI/Parts/player_selection_add_new_player_red_inherit.tscn" type="PackedScene" id=8]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+uniform sampler2D color_gradient: hint_albedo;
+
+
+void fragment()
+{
+	vec4 tex = texture(TEXTURE, UV);
+	float tex_to_grey = (tex.r+tex.g+tex.b)*0.33;
+	vec4 tex_to_color_gradient = texture(color_gradient, vec2(tex_to_grey, 0.0));
+	
+	COLOR.rgb = vec3(tex_to_grey);
+	COLOR.rgb = tex_to_color_gradient.rgb;
+	COLOR.a = tex.a;
+}"
+
+[sub_resource type="Gradient" id=2]
+offsets = PoolRealArray( 0, 0.486726, 1 )
+colors = PoolColorArray( 0.576471, 0.239216, 0.239216, 1, 0.576471, 0.239216, 0.239216, 1, 0.535156, 0.280121, 0.280121, 1 )
+
+[sub_resource type="GradientTexture" id=3]
+gradient = SubResource( 2 )
+width = 256
+
+[sub_resource type="ShaderMaterial" id=4]
+shader = SubResource( 1 )
+shader_param/color_gradient = SubResource( 3 )
+
+[sub_resource type="ViewportTexture" id=5]
+viewport_path = NodePath("VBoxContainer2/HBoxContainer/Viewport")
+
+[node name="player_selection_settings_red_inherit" instance=ExtResource( 1 )]
+texture = ExtResource( 2 )
+script = ExtResource( 3 )
+AssignControls = NodePath("TextureButton")
+
+[node name="Player_Name" parent="." index="0"]
+editor/display_folded = false
+
+[node name="LineEdit" parent="Player_Name" index="1"]
+text = "Brownie"
+
+[node name="TextureRect" parent="." index="1"]
+editor/display_folded = false
+material = ExtResource( 4 )
+
+[node name="TextureButton" parent="TextureRect/ui_controlled_by/MarginContainer2" index="0"]
+material = SubResource( 4 )
+
+[node name="VBoxContainer2" parent="." index="2"]
+body_material = ExtResource( 5 )
+hat_material = ExtResource( 6 )
+
+[node name="TextureRect3" parent="VBoxContainer2/HBoxContainer" index="1"]
+texture = SubResource( 5 )
+
+[node name="TextureRect" parent="VBoxContainer2/HBoxContainer/VBoxContainer" index="0"]
+self_modulate = Color( 0.843137, 0.843137, 0.843137, 1 )
+material = ExtResource( 4 )
+
+[node name="TextureRect2" parent="VBoxContainer2/HBoxContainer/VBoxContainer" index="1"]
+self_modulate = Color( 0.843137, 0.843137, 0.843137, 1 )
+material = ExtResource( 4 )
+
+[node name="Assign_Controls" parent="TextureButton" index="0"]
+self_modulate = Color( 0.831373, 0.831373, 0.831373, 1 )
+material = ExtResource( 4 )
+
+[node name="player_assign_controls" parent="." index="4" instance=ExtResource( 7 )]
+visible = false
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 0.0
+margin_top = 0.0
+margin_right = 0.0
+margin_bottom = 0.0
+
+[node name="player_selection_add_new_player" parent="." index="5" instance=ExtResource( 8 )]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 0.0
+margin_top = 0.0
+margin_right = 0.0
+margin_bottom = 0.0
+[connection signal="controlled_by_checkbox_changed" from="TextureRect" to="." method="_on_TextureRect_controlled_by_checkbox_changed"]
+[connection signal="pressed" from="player_selection_add_new_player" to="." method="_on_add_Button_pressed"]
+
+[editable path="TextureButton"]

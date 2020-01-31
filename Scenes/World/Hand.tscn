@@ -1,0 +1,190 @@
+[gd_scene load_steps=14 format=2]
+
+[ext_resource path="res://Scenes/World/Collectable/Present.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Scenes/World/Collectable/LargePresent.tscn" type="PackedScene" id=2]
+[ext_resource path="res://Asset/Model/hand.tscn" type="PackedScene" id=3]
+
+[sub_resource type="GDScript" id=1]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends Spatial
+
+export (NodePath) var floating_path
+export (NodePath) var punching_path
+export (Array, PackedScene) var spawnable_collectables = []
+
+export var punch_period = 500
+export var gift_period = 75
+
+enum HandState {GIVING, MOVING_TO_GIVE, PUNCHING, MOVING_TO_PUNCH}
+var state = HandState.MOVING_TO_GIVE
+var spawnable_collectable_scenes = []
+
+var max_velocity = 0.5
+
+var time = 0.0
+var punching_time = 0.0
+func _ready():
+	add_to_group(\"points_of_interest\")
+	$hand_mesh/AnimationPlayer.get_animation(\"hand_pinch_2\").set_loop(true)
+	for packed_scene in spawnable_collectables:
+		spawnable_collectable_scenes.append(packed_scene.instance())
+		
+func spawnCollectable():
+	var collectable = spawnable_collectable_scenes[randi()%spawnable_collectable_scenes.size()].duplicate()
+	get_parent().add_child(collectable)
+	collectable.translation = translation
+
+func update_position():
+	if state == HandState.GIVING:
+		var curve = get_node(floating_path).curve
+		var length = curve.get_baked_length()
+		translation = curve.interpolate_baked(((sin(time/2)*sin(time)*sin(time/3))/2+0.5)*length)
+	elif state == HandState.MOVING_TO_GIVE:
+		var curve = get_node(floating_path).curve
+		var length = curve.get_baked_length()
+		var distance = (curve.interpolate_baked(((sin(time/2)*sin(time)*sin(time/3))/2+0.5)*length)-translation)
+		if distance.length() * 0.1 > max_velocity:
+			translation += distance.normalized()*max_velocity
+		else:
+			translation += distance*0.5
+		if distance.length() < 0.1:
+			$hand_mesh/AnimationTree[\"parameters/playback\"].travel(\"pinch\")
+			state = HandState.GIVING
+			$IdleHitboxLeft.collision_mask = 2
+			$IdleHitboxRight.collision_mask = 2
+	elif state == HandState.MOVING_TO_PUNCH:
+		var curve = get_node(punching_path).curve
+		var distance = curve.interpolate_baked(0)-translation
+		if distance.length() * 0.1 > max_velocity:
+			translation += distance.normalized()*max_velocity
+		else:
+			translation += distance*0.5
+		if distance.length() < 0.1:
+			state = HandState.PUNCHING
+			$PunchHitbox.collision_mask = 2
+			punching_time = time
+	elif state == HandState.PUNCHING:
+		var curve = get_node(punching_path).curve
+		var length = curve.get_baked_length()
+		var progress = time - punching_time
+		if progress > 1.0:
+			state = HandState.MOVING_TO_GIVE
+			add_to_group(\"points_of_interest\")
+			$PunchHitbox.collision_mask = 0
+		else:
+			var distance = curve.interpolate_baked(progress*length)-translation
+			translation += distance*0.1
+
+func _process(delta):
+	time += delta
+	update_position()
+	if state == HandState.GIVING:
+		if randf()<1.0/gift_period:
+			spawnCollectable()
+		elif randf()<1.0/punch_period:
+			state = HandState.MOVING_TO_PUNCH
+			$hand_mesh/AnimationTree[\"parameters/playback\"].travel(\"punch\")
+			$IdleHitboxLeft.collision_mask = 0
+			$IdleHitboxRight.collision_mask = 0
+			remove_from_group(\"points_of_interest\")
+
+
+func _on_Area_body_entered(body):
+	if body.is_in_group(\"character\"):
+		body.hit(5, false)
+
+
+func _on_IdleHitboxLeft_body_entered(body):
+	if body.is_in_group(\"character\"):
+		body.hit(2, false)
+
+
+func _on_IdleHitboxRight_body_entered(body):
+	if body.is_in_group(\"character\"):
+		body.hit(2, true)
+"
+
+[sub_resource type="AnimationNodeAnimation" id=2]
+animation = "hand_pinch_2"
+
+[sub_resource type="AnimationNodeAnimation" id=3]
+animation = "hand_fist_pose"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=4]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=5]
+
+[sub_resource type="AnimationNodeStateMachine" id=6]
+states/pinch/node = SubResource( 2 )
+states/pinch/position = Vector2( 701, 94 )
+states/punch/node = SubResource( 3 )
+states/punch/position = Vector2( 172, 106 )
+transitions = [ "punch", "pinch", SubResource( 4 ), "pinch", "punch", SubResource( 5 ) ]
+start_node = "pinch"
+
+[sub_resource type="AnimationNodeStateMachinePlayback" id=7]
+
+[sub_resource type="BoxShape" id=8]
+extents = Vector3( 1.18846, 2.97405, 1 )
+
+[sub_resource type="BoxShape" id=9]
+extents = Vector3( 2.64273, 2.68527, 1 )
+
+[sub_resource type="BoxShape" id=10]
+extents = Vector3( 3.90801, 2.11494, 1 )
+
+[node name="Hand" type="Spatial"]
+script = SubResource( 1 )
+spawnable_collectables = [ ExtResource( 1 ), ExtResource( 2 ) ]
+
+[node name="hand_mesh" parent="." instance=ExtResource( 3 )]
+transform = Transform( 1.99932, -0.0523117, 2.28662e-09, 0.0523117, 1.99932, 0.000301361, -7.88464e-06, -0.000301258, 2, 5.82656, -0.372508, 1.10181 )
+
+[node name="hand" parent="hand_mesh/armature_hand" index="0"]
+transform = Transform( 1, 0, 0, 0, 1, -8.35187e-23, 0, -8.35188e-23, 1, 0, 0, 0 )
+
+[node name="AnimationTree" type="AnimationTree" parent="hand_mesh"]
+tree_root = SubResource( 6 )
+anim_player = NodePath("../AnimationPlayer")
+active = true
+parameters/playback = SubResource( 7 )
+
+[node name="PunchHitbox" type="Area" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0419145, 2.64043, 0 )
+collision_layer = 0
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape" parent="PunchHitbox"]
+shape = SubResource( 8 )
+
+[node name="IdleHitboxLeft" type="Area" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape" type="CollisionShape" parent="IdleHitboxLeft"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2.34683, 1.29595, 0 )
+shape = SubResource( 9 )
+
+[node name="IdleHitboxRight" type="Area" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape" type="CollisionShape" parent="IdleHitboxRight"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60628, 1.29595, 0 )
+shape = SubResource( 10 )
+
+[node name="OmniLight" type="OmniLight" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.535339, 0, 5.74722 )
+omni_range = 11.5
+[connection signal="body_entered" from="PunchHitbox" to="." method="_on_Area_body_entered"]
+[connection signal="body_entered" from="IdleHitboxLeft" to="." method="_on_IdleHitboxLeft_body_entered"]
+[connection signal="body_entered" from="IdleHitboxRight" to="." method="_on_IdleHitboxRight_body_entered"]
+
+[editable path="hand_mesh"]

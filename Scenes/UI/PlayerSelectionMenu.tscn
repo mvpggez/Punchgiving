@@ -1,0 +1,564 @@
+[gd_scene load_steps=23 format=2]
+
+[ext_resource path="res://Asset/UI/ui_label_1.png" type="Texture" id=1]
+[ext_resource path="res://Asset/UI/Placeholder/background.png" type="Texture" id=2]
+[ext_resource path="res://Scenes/UI/Parts/PlayerSlot.tscn" type="PackedScene" id=3]
+[ext_resource path="res://Asset/UI/Placeholder/button.png" type="Texture" id=4]
+[ext_resource path="res://Scenes/UI/Parts/moving_background.tscn" type="PackedScene" id=5]
+[ext_resource path="res://Asset/UI/star_texture_3.png" type="Texture" id=6]
+[ext_resource path="res://Scenes/UI/Parts/player_selection_settings_red_inherit.tscn" type="PackedScene" id=7]
+[ext_resource path="res://Scenes/UI/Parts/player_selection_settings_green_inherit.tscn" type="PackedScene" id=8]
+[ext_resource path="res://Scenes/UI/Parts/player_selection_settings_orange_inherit.tscn" type="PackedScene" id=9]
+[ext_resource path="res://Scenes/UI/Parts/player_selection_settings_blue_inherit.tscn" type="PackedScene" id=10]
+[ext_resource path="res://Asset/UI/play_button.png" type="Texture" id=11]
+[ext_resource path="res://Asset/UI/play_button1.png" type="Texture" id=12]
+[ext_resource path="res://Asset/UI/player_button_disabled.png" type="Texture" id=13]
+[ext_resource path="res://Asset/UI/ui_gift_2.png" type="Texture" id=14]
+[ext_resource path="res://Asset/UI/ui_gift_4.png" type="Texture" id=15]
+[ext_resource path="res://Asset/UI/ui_gift_1.png" type="Texture" id=16]
+[ext_resource path="res://Asset/UI/ui_gift_3.png" type="Texture" id=17]
+
+[sub_resource type="GDScript" id=1]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends Control
+
+export (NodePath) var player_slot_grid_container_nodepath
+export (NodePath) var assign_controls_window_nodepath
+export (NodePath) var player_selection_window_nodepath
+
+export (NodePath) var assign_controls_color_rect_nodepath
+export (NodePath) var assign_controls_player_name_label_nodepath
+export (NodePath) var assign_controls_player_number_label_nodepath
+export (NodePath) var assign_controls_current_label_nodepath
+
+var host_data_dictionary = {\"number_of_players\": 1, \"player_data_list\":[{\"player_00_data\":{\"player_name\": \"Brownie\", \"player_beard\":\"moustache\", \"controll_status\":\"human\", \"player_number\":1}}, {\"player_01_data\":{\"player_name\": \"Brownie\", \"player_beard\":\"moustache\", \"controll_status\":\"ai\", \"player_number\":1}}]}
+signal input_assigned
+# Called when the node enters the scene tree for the first time.
+
+func GenerateDefaultName():
+	randomize()
+	var default_name
+	default_name = \"Brownie\" + str(randi() % 1000 + 1)
+	return default_name
+
+func FillDictionary():
+	ClearHostDataDictionary()
+	var player_slot_list = []
+	
+	player_slot_list.append(get_node(\"Control/VBoxContainer/HBoxContainer/player_selection_settings_red_inherit\"))
+	player_slot_list.append(get_node(\"Control/VBoxContainer/HBoxContainer/player_selection_settings_green_inherit\"))
+	player_slot_list.append(get_node(\"Control/VBoxContainer/HBoxContainer2/player_selection_settings_orange_inherit\"))
+	player_slot_list.append(get_node(\"Control/VBoxContainer/HBoxContainer2/player_selection_settings_blue_inherit\"))
+	
+	var number_of_players = 0
+	
+	for slot in player_slot_list:
+		if slot.added:
+			number_of_players = number_of_players + 1
+			
+			var player_control_status
+			var player_name
+			var player_beard
+			var player_number
+			
+			var player_data_dictionary = {}
+			
+			player_name = slot.GetPlayerName()
+			
+			if player_name.length() <= 48:
+				if player_name.length() <= 0:
+					player_name = GenerateDefaultName()
+			
+			player_beard = str(slot.get_beard())
+			player_control_status = str(slot.get_control())
+			player_number = int(slot.player_id)
+			
+			player_data_dictionary[\"player_control_status\"] = player_control_status
+			player_data_dictionary[\"player_name\"] = player_name
+			player_data_dictionary[\"player_beard\"] = player_beard
+			player_data_dictionary[\"player_number\"] = player_number
+			player_data_dictionary[\"added\"] = true
+			host_data_dictionary[\"player_data_list\"].append(player_data_dictionary)
+		else:
+			var player_data_dictionary = {}
+			player_data_dictionary[\"added\"] = false
+			host_data_dictionary[\"player_data_list\"].append(player_data_dictionary)
+	host_data_dictionary[\"number_of_players\"] = int(number_of_players)
+
+func ClearHostDataDictionary():
+	host_data_dictionary = {\"number_of_players\": 1, \"player_data_list\":[]}
+
+
+func ShowPlayerSelectionWindow():
+	get_node(player_selection_window_nodepath).show()
+	get_node(assign_controls_window_nodepath).hide()
+
+func _on_StartGameButton_pressed():
+	FillDictionary()
+	get_parent().start_game(host_data_dictionary)
+
+#Player Count Signal Processing
+var added_player_count = 0
+
+
+func _check_player_count(slot_added_player):
+	if slot_added_player == 0:
+		added_player_count -= 1
+	else:
+		added_player_count += 1
+
+func _on_player_selection_settings_red_inherit_added_player_count_changed(slot_added_player):
+	_check_player_count(slot_added_player)
+
+func _on_player_selection_settings_green_inherit_added_player_count_changed(slot_added_player):
+	_check_player_count(slot_added_player)
+		
+func _on_player_selection_settings_orange_inherit_added_player_count_changed(slot_added_player):
+	_check_player_count(slot_added_player)
+	
+func _on_player_selection_settings_blue_inherit_added_player_count_changed(slot_added_player):
+	_check_player_count(slot_added_player)
+
+var dict_slot_status = {}
+func _on_slot_status_update(slot_is_ready, slot_name, slot_removed):
+	#update dict dict_slot_status
+	if slot_name in dict_slot_status.keys() and slot_removed:
+		dict_slot_status.erase(slot_name)
+	else:
+		dict_slot_status[slot_name] = slot_is_ready
+		
+	#update play button
+	if !dict_slot_status:
+		#no slots added
+		get_node(\"Control/TextureButton_Play\").disabled = true
+	elif false in dict_slot_status.values():
+		#slot not ready
+		get_node(\"Control/TextureButton_Play\").disabled = true
+	else:
+		get_node(\"Control/TextureButton_Play\").disabled = false"
+
+[sub_resource type="StyleBoxTexture" id=2]
+texture = ExtResource( 2 )
+region_rect = Rect2( 0, 0, 2880, 1620 )
+
+[sub_resource type="Gradient" id=3]
+colors = PoolColorArray( 0.0117647, 0.0411918, 0.145098, 0.290196, 0.231373, 0.0392157, 0.0392157, 0.282353 )
+
+[sub_resource type="GradientTexture" id=4]
+gradient = SubResource( 3 )
+width = 1024
+
+[sub_resource type="StyleBoxTexture" id=5]
+texture = SubResource( 4 )
+region_rect = Rect2( 0, 0, 1024, 1 )
+
+[node name="PlayerSelectionMenu" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = SubResource( 1 )
+player_slot_grid_container_nodepath = NodePath("PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer")
+assign_controls_window_nodepath = NodePath("AssignControlsWindow")
+player_selection_window_nodepath = NodePath("PlayerSelectionWindow")
+assign_controls_color_rect_nodepath = NodePath("AssignControlsWindow/ColorRect")
+assign_controls_player_name_label_nodepath = NodePath("AssignControlsWindow/CenterContainer/VBoxContainer/PlayerName")
+assign_controls_player_number_label_nodepath = NodePath("AssignControlsWindow/CenterContainer/VBoxContainer/CenterContainer/PlayerNumber")
+assign_controls_current_label_nodepath = NodePath("AssignControlsWindow/CenterContainer/VBoxContainer/CurrentAssignmentText")
+
+[node name="StartGameCenterContainer" type="CenterContainer" parent="."]
+editor/display_folded = true
+visible = false
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = -476.023
+margin_top = -136.801
+margin_right = 189.977
+margin_bottom = -16.8007
+
+[node name="MarginContainer2" type="MarginContainer" parent="StartGameCenterContainer"]
+margin_left = 283.0
+margin_right = 383.0
+margin_bottom = 120.0
+custom_constants/margin_top = 20
+custom_constants/margin_bottom = 0
+
+[node name="CenterContainer" type="CenterContainer" parent="StartGameCenterContainer/MarginContainer2"]
+margin_top = 20.0
+margin_right = 100.0
+margin_bottom = 120.0
+
+[node name="TextureButton" type="TextureButton" parent="StartGameCenterContainer/MarginContainer2/CenterContainer"]
+margin_right = 100.0
+margin_bottom = 100.0
+rect_min_size = Vector2( 100, 100 )
+texture_normal = ExtResource( 1 )
+expand = true
+stretch_mode = 5
+
+[node name="StartGameButton" type="Button" parent="StartGameCenterContainer/MarginContainer2/CenterContainer"]
+margin_left = 8.0
+margin_top = 40.0
+margin_right = 91.0
+margin_bottom = 60.0
+text = "Start Game"
+flat = true
+
+[node name="PlayerSelectionWindow" type="VBoxContainer" parent="."]
+editor/display_folded = true
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -314.0
+margin_top = -325.0
+margin_right = 314.0
+margin_bottom = 325.0
+mouse_filter = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="PlayerSelectionWindow"]
+margin_right = 644.0
+margin_bottom = 650.0
+
+[node name="Panel" type="Panel" parent="PlayerSelectionWindow/MarginContainer"]
+visible = false
+margin_right = 644.0
+margin_bottom = 650.0
+custom_styles/panel = SubResource( 2 )
+
+[node name="PlayerSlotGridContainer" type="GridContainer" parent="PlayerSelectionWindow/MarginContainer"]
+margin_right = 644.0
+margin_bottom = 650.0
+custom_constants/vseparation = 60
+custom_constants/hseparation = 60
+columns = 2
+
+[node name="PlayerSlot" parent="PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer" instance=ExtResource( 3 )]
+margin_right = 292.0
+margin_bottom = 295.0
+close_slot_container_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot/CloseButtonCenterContainer")
+settings_box_container_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot/SettingsBoxContainer")
+current_controll_label_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot/SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer/CurrentControllLabel")
+current_beard_name_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot/SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer/BeardNameLabel")
+player_texture_rect_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot/SettingsBoxContainer/CenterContainer/PlayerTextureRect")
+player_name_input_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot/SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer/NameInputLineEdit")
+
+[node name="PlayerSlot2" parent="PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer" instance=ExtResource( 3 )]
+margin_left = 352.0
+margin_right = 644.0
+margin_bottom = 295.0
+close_slot_container_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot2/CloseButtonCenterContainer")
+settings_box_container_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot2/SettingsBoxContainer")
+current_controll_label_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot2/SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer/CurrentControllLabel")
+current_beard_name_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot2/SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer/BeardNameLabel")
+player_texture_rect_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot2/SettingsBoxContainer/CenterContainer/PlayerTextureRect")
+player_name_input_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot2/SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer/NameInputLineEdit")
+player_number = 1
+
+[node name="PlayerSlot3" parent="PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer" instance=ExtResource( 3 )]
+margin_top = 355.0
+margin_right = 292.0
+margin_bottom = 650.0
+close_slot_container_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot3/CloseButtonCenterContainer")
+settings_box_container_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot3/SettingsBoxContainer")
+current_controll_label_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot3/SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer/CurrentControllLabel")
+current_beard_name_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot3/SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer/BeardNameLabel")
+player_texture_rect_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot3/SettingsBoxContainer/CenterContainer/PlayerTextureRect")
+player_name_input_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot3/SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer/NameInputLineEdit")
+player_number = 2
+
+[node name="PlayerSlot4" parent="PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer" instance=ExtResource( 3 )]
+margin_left = 352.0
+margin_top = 355.0
+margin_right = 644.0
+margin_bottom = 650.0
+close_slot_container_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot4/CloseButtonCenterContainer")
+settings_box_container_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot4/SettingsBoxContainer")
+current_controll_label_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot4/SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer/CurrentControllLabel")
+current_beard_name_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot4/SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer/BeardNameLabel")
+player_texture_rect_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot4/SettingsBoxContainer/CenterContainer/PlayerTextureRect")
+player_name_input_nodepath = NodePath("../../../../PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot4/SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer/NameInputLineEdit")
+player_number = 3
+
+[node name="AssignControlsWindow" type="MarginContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -56.0
+margin_top = -97.0
+margin_right = 61.0
+margin_bottom = 120.0
+
+[node name="TextureRect" type="TextureRect" parent="AssignControlsWindow"]
+visible = false
+margin_right = 117.0
+margin_bottom = 217.0
+rect_min_size = Vector2( 100, 100 )
+texture = ExtResource( 4 )
+expand = true
+stretch_mode = 1
+
+[node name="ColorRect" type="ColorRect" parent="AssignControlsWindow"]
+margin_right = 117.0
+margin_bottom = 217.0
+color = Color( 0.027451, 0.054902, 0.0196078, 1 )
+
+[node name="CenterContainer" type="CenterContainer" parent="AssignControlsWindow"]
+margin_right = 117.0
+margin_bottom = 217.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="AssignControlsWindow/CenterContainer"]
+margin_left = 2.0
+margin_top = 11.0
+margin_right = 115.0
+margin_bottom = 206.0
+
+[node name="CenterContainer" type="CenterContainer" parent="AssignControlsWindow/CenterContainer/VBoxContainer"]
+editor/display_folded = true
+margin_right = 113.0
+margin_bottom = 14.0
+
+[node name="PlayerNumber" type="Label" parent="AssignControlsWindow/CenterContainer/VBoxContainer/CenterContainer"]
+margin_left = 31.0
+margin_right = 82.0
+margin_bottom = 14.0
+text = "Player 1"
+
+[node name="PlayerName" type="Label" parent="AssignControlsWindow/CenterContainer/VBoxContainer"]
+margin_top = 18.0
+margin_right = 113.0
+margin_bottom = 32.0
+text = "Name: Brownie"
+align = 1
+
+[node name="HSeparator" type="HSeparator" parent="AssignControlsWindow/CenterContainer/VBoxContainer"]
+margin_top = 36.0
+margin_right = 113.0
+margin_bottom = 40.0
+
+[node name="CurrentAssignmentText" type="Label" parent="AssignControlsWindow/CenterContainer/VBoxContainer"]
+margin_top = 44.0
+margin_right = 113.0
+margin_bottom = 58.0
+text = "Assign: Move Left"
+align = 1
+
+[node name="AssignedButtonsText" type="Label" parent="AssignControlsWindow/CenterContainer/VBoxContainer"]
+margin_top = 62.0
+margin_right = 113.0
+margin_bottom = 195.0
+text = "
+
+Jump: Space
+Move Left: A
+Move Right: D
+Attack: Shift
+
+"
+align = 1
+
+[node name="Control" type="Control" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Moving_Background" parent="Control" instance=ExtResource( 5 )]
+
+[node name="TextureRect2" type="TextureRect" parent="Control"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource( 6 )
+expand = true
+stretch_mode = 2
+
+[node name="Panel2" type="Panel" parent="Control"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_styles/panel = SubResource( 5 )
+
+[node name="TextureRect" type="TextureRect" parent="Control"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -640.0
+margin_top = -360.0
+margin_right = 640.0
+margin_bottom = 360.0
+rect_min_size = Vector2( 1280, 720 )
+texture = ExtResource( 2 )
+expand = true
+stretch_mode = 6
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -640.0
+margin_top = -360.0
+margin_right = 640.0
+margin_bottom = 360.0
+custom_constants/separation = 73
+alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Control/VBoxContainer"]
+margin_top = 23.0
+margin_right = 1280.0
+margin_bottom = 323.0
+custom_constants/separation = 65
+alignment = 1
+
+[node name="player_selection_settings_red_inherit" parent="Control/VBoxContainer/HBoxContainer" instance=ExtResource( 7 )]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+margin_left = 57.0
+margin_top = 0.0
+margin_right = 607.0
+margin_bottom = 300.0
+
+[node name="player_selection_settings_green_inherit" parent="Control/VBoxContainer/HBoxContainer" instance=ExtResource( 8 )]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+margin_left = 672.0
+margin_top = 0.0
+margin_right = 1222.0
+margin_bottom = 300.0
+rect_pivot_offset = Vector2( -402, -493 )
+player_id = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="Control/VBoxContainer"]
+margin_top = 396.0
+margin_right = 1280.0
+margin_bottom = 696.0
+custom_constants/separation = 65
+alignment = 1
+
+[node name="player_selection_settings_orange_inherit" parent="Control/VBoxContainer/HBoxContainer2" instance=ExtResource( 9 )]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+margin_left = 57.0
+margin_top = 0.0
+margin_right = 607.0
+margin_bottom = 300.0
+player_id = 3
+
+[node name="player_selection_settings_blue_inherit" parent="Control/VBoxContainer/HBoxContainer2" instance=ExtResource( 10 )]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+margin_left = 672.0
+margin_top = 0.0
+margin_right = 1222.0
+margin_bottom = 300.0
+player_id = 4
+
+[node name="TextureButton_Play" type="TextureButton" parent="Control"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -60.0
+margin_top = -60.0
+margin_right = 60.0
+margin_bottom = 60.0
+disabled = true
+texture_normal = ExtResource( 11 )
+texture_pressed = ExtResource( 11 )
+texture_hover = ExtResource( 12 )
+texture_disabled = ExtResource( 13 )
+expand = true
+
+[node name="Button" type="Button" parent="Control/TextureButton_Play"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -51.0
+margin_top = -10.0
+margin_right = 51.0
+margin_bottom = 10.0
+mouse_filter = 2
+text = "PLAY-BUTTON"
+flat = true
+
+[node name="texture_gifts" type="Control" parent="Control"]
+editor/display_folded = true
+margin_right = 40.0
+margin_bottom = 40.0
+
+[node name="ui_gift_2" type="TextureRect" parent="Control/texture_gifts"]
+margin_left = -9.75193
+margin_top = 286.584
+margin_right = 89.2481
+margin_bottom = 385.584
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+
+[node name="ui_gift_6" type="TextureRect" parent="Control/texture_gifts"]
+margin_left = 1268.0
+margin_top = 295.0
+margin_right = 1383.0
+margin_bottom = 410.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+
+[node name="ui_gift_3" type="TextureRect" parent="Control/texture_gifts"]
+margin_left = 16.6412
+margin_top = 335.019
+margin_right = 72.6412
+margin_bottom = 391.019
+texture = ExtResource( 15 )
+expand = true
+stretch_mode = 1
+
+[node name="ui_gift_5" type="TextureRect" parent="Control/texture_gifts"]
+margin_left = 1231.51
+margin_top = 318.068
+margin_right = 1333.51
+margin_bottom = 420.068
+texture = ExtResource( 16 )
+expand = true
+stretch_mode = 1
+
+[node name="ui_gift_4" type="TextureRect" parent="Control/texture_gifts"]
+margin_left = 1218.9
+margin_top = 354.917
+margin_right = 1300.9
+margin_bottom = 436.917
+texture = ExtResource( 17 )
+expand = true
+stretch_mode = 1
+[connection signal="set_controls" from="PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot" to="." method="_on_PlayerSlot_set_controls"]
+[connection signal="set_controls" from="PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot2" to="." method="_on_PlayerSlot_set_controls"]
+[connection signal="set_controls" from="PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot3" to="." method="_on_PlayerSlot_set_controls"]
+[connection signal="set_controls" from="PlayerSelectionWindow/MarginContainer/PlayerSlotGridContainer/PlayerSlot4" to="." method="_on_PlayerSlot_set_controls"]
+[connection signal="added_player_count_changed" from="Control/VBoxContainer/HBoxContainer/player_selection_settings_red_inherit" to="." method="_on_player_selection_settings_red_inherit_added_player_count_changed"]
+[connection signal="slot_status_update" from="Control/VBoxContainer/HBoxContainer/player_selection_settings_red_inherit" to="." method="_on_slot_status_update"]
+[connection signal="added_player_count_changed" from="Control/VBoxContainer/HBoxContainer/player_selection_settings_green_inherit" to="." method="_on_player_selection_settings_green_inherit_added_player_count_changed"]
+[connection signal="slot_status_update" from="Control/VBoxContainer/HBoxContainer/player_selection_settings_green_inherit" to="." method="_on_slot_status_update"]
+[connection signal="added_player_count_changed" from="Control/VBoxContainer/HBoxContainer2/player_selection_settings_orange_inherit" to="." method="_on_player_selection_settings_orange_inherit_added_player_count_changed"]
+[connection signal="slot_status_update" from="Control/VBoxContainer/HBoxContainer2/player_selection_settings_orange_inherit" to="." method="_on_slot_status_update"]
+[connection signal="added_player_count_changed" from="Control/VBoxContainer/HBoxContainer2/player_selection_settings_blue_inherit" to="." method="_on_player_selection_settings_blue_inherit_added_player_count_changed"]
+[connection signal="slot_status_update" from="Control/VBoxContainer/HBoxContainer2/player_selection_settings_blue_inherit" to="." method="_on_slot_status_update"]
+[connection signal="pressed" from="Control/TextureButton_Play" to="." method="_on_StartGameButton_pressed"]

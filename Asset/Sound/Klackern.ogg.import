@@ -1,0 +1,15 @@
+[remap]
+
+importer="ogg_vorbis"
+type="AudioStreamOGGVorbis"
+path="res://.import/Klackern.ogg-cdca7a9988794360fda3f2794f147432.oggstr"
+
+[deps]
+
+source_file="res://Asset/Sound/Klackern.ogg"
+dest_files=[ "res://.import/Klackern.ogg-cdca7a9988794360fda3f2794f147432.oggstr" ]
+
+[params]
+
+loop=true
+loop_offset=0

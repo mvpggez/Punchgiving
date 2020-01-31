@@ -1,0 +1,129 @@
+[gd_scene load_steps=6 format=2]
+
+[ext_resource path="res://Asset/UI/ui_label_1.png" type="Texture" id=1]
+[ext_resource path="res://Asset/Font/MVP-Font-1_2_2.ttf" type="DynamicFontData" id=2]
+[ext_resource path="res://Asset/Sound/AudioStreamPlayer_Esc_Menu.tscn" type="PackedScene" id=3]
+
+[sub_resource type="GDScript" id=1]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends Control
+
+signal mainmenu
+
+func _on_ExitButton_pressed():
+	get_tree().quit()
+
+func _on_MainMenuButton_pressed():
+	emit_signal(\"mainmenu\")
+"
+
+[sub_resource type="DynamicFont" id=2]
+size = 20
+font_data = ExtResource( 2 )
+
+[node name="Control" type="Control"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -640.0
+margin_top = -360.0
+margin_right = 640.0
+margin_bottom = 360.0
+script = SubResource( 1 )
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_constants/separation = 26
+alignment = 1
+
+[node name="TextureButton" type="TextureButton" parent="VBoxContainer"]
+visible = false
+margin_top = 221.0
+margin_right = 1280.0
+margin_bottom = 296.0
+rect_min_size = Vector2( 200, 75 )
+texture_normal = ExtResource( 1 )
+expand = true
+stretch_mode = 5
+
+[node name="Button" type="Button" parent="VBoxContainer/TextureButton"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -80.0
+margin_top = -37.5
+margin_right = 80.0
+margin_bottom = 37.5
+custom_fonts/font = SubResource( 2 )
+custom_colors/font_color = Color( 1, 0.92549, 0.811765, 1 )
+custom_colors/font_color_hover = Color( 1, 0.780392, 0.447059, 1 )
+text = "RESTART"
+flat = true
+
+[node name="AudioStreamPlayer" parent="VBoxContainer/TextureButton/Button" instance=ExtResource( 3 )]
+
+[node name="MainMenuButton" type="TextureButton" parent="VBoxContainer"]
+margin_top = 272.0
+margin_right = 1280.0
+margin_bottom = 347.0
+rect_min_size = Vector2( 200, 75 )
+texture_normal = ExtResource( 1 )
+expand = true
+stretch_mode = 5
+
+[node name="MainMenuButton" type="Button" parent="VBoxContainer/MainMenuButton"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -80.0
+margin_top = -37.5
+margin_right = 80.0
+margin_bottom = 37.5
+custom_fonts/font = SubResource( 2 )
+custom_colors/font_color = Color( 1, 0.92549, 0.811765, 1 )
+custom_colors/font_color_hover = Color( 1, 0.780392, 0.447059, 1 )
+text = "MAIN MENU"
+flat = true
+
+[node name="AudioStreamPlayer" parent="VBoxContainer/MainMenuButton/MainMenuButton" instance=ExtResource( 3 )]
+
+[node name="ExitButton" type="TextureButton" parent="VBoxContainer"]
+margin_top = 373.0
+margin_right = 1280.0
+margin_bottom = 448.0
+rect_min_size = Vector2( 200, 75 )
+texture_normal = ExtResource( 1 )
+expand = true
+stretch_mode = 5
+
+[node name="ExitButton" type="Button" parent="VBoxContainer/ExitButton"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -80.0
+margin_top = -37.5
+margin_right = 80.0
+margin_bottom = 37.5
+custom_fonts/font = SubResource( 2 )
+custom_colors/font_color = Color( 1, 0.92549, 0.811765, 1 )
+custom_colors/font_color_hover = Color( 1, 0.780392, 0.447059, 1 )
+text = "EXIT GAME"
+flat = true
+
+[node name="AudioStreamPlayer" parent="VBoxContainer/ExitButton/ExitButton" instance=ExtResource( 3 )]
+[connection signal="pressed" from="VBoxContainer/MainMenuButton" to="." method="_on_MainMenuButton_pressed"]
+[connection signal="pressed" from="VBoxContainer/MainMenuButton/MainMenuButton" to="." method="_on_MainMenuButton_pressed"]
+[connection signal="pressed" from="VBoxContainer/ExitButton" to="." method="_on_ExitButton_pressed"]
+[connection signal="pressed" from="VBoxContainer/ExitButton/ExitButton" to="." method="_on_ExitButton_pressed"]

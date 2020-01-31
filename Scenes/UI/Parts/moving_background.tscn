@@ -1,0 +1,40 @@
+[gd_scene load_steps=8 format=2]
+
+[ext_resource path="res://Asset/Material/UI/ui_moving_background.material" type="Material" id=1]
+[ext_resource path="res://Asset/UI/star_texture_3.png" type="Texture" id=2]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+void fragment()
+{
+	COLOR = texture(TEXTURE, vec2( UV.y,UV.x));
+}"
+
+[sub_resource type="ShaderMaterial" id=2]
+shader = SubResource( 1 )
+
+[sub_resource type="Gradient" id=3]
+offsets = PoolRealArray( 0.141935, 0.762082, 1 )
+colors = PoolColorArray( 0.454902, 0.407843, 0.321569, 0.431373, 0.0798156, 0.0927612, 0.183991, 0.874915, 0.0680847, 0.082907, 0.179688, 0.888787 )
+
+[sub_resource type="GradientTexture" id=4]
+gradient = SubResource( 3 )
+
+[sub_resource type="StyleBoxTexture" id=5]
+texture = SubResource( 4 )
+region_rect = Rect2( 0, 0, 2048, 1 )
+
+[node name="Moving_Background" type="TextureRect"]
+material = ExtResource( 1 )
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource( 2 )
+expand = true
+stretch_mode = 2
+
+[node name="Panel" type="Panel" parent="."]
+material = SubResource( 2 )
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_styles/panel = SubResource( 5 )

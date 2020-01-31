@@ -1,0 +1,15 @@
+[remap]
+
+importer="ogg_vorbis"
+type="AudioStreamOGGVorbis"
+path="res://.import/Jingle Bells 3_Kevin_Mc_Leod.ogg-6944f4b314bff7cbc4087447384bc1c5.oggstr"
+
+[deps]
+
+source_file="res://Asset/Music/Jingle Bells 3_Kevin_Mc_Leod.ogg"
+dest_files=[ "res://.import/Jingle Bells 3_Kevin_Mc_Leod.ogg-6944f4b314bff7cbc4087447384bc1c5.oggstr" ]
+
+[params]
+
+loop=true
+loop_offset=0

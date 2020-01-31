@@ -1,0 +1,876 @@
+[gd_scene load_steps=36 format=2]
+
+[ext_resource path="res://Asset/UI/ui_gift_1.png" type="Texture" id=1]
+[ext_resource path="res://Asset/UI/ui_gift_2.png" type="Texture" id=2]
+[ext_resource path="res://Asset/UI/ui_gift_3.png" type="Texture" id=3]
+[ext_resource path="res://Asset/UI/ui_gift_4.png" type="Texture" id=4]
+[ext_resource path="res://Asset/Material/UI/player_inner_background_red.material" type="Material" id=5]
+[ext_resource path="res://Asset/Material/UI/player_inner_background_green.material" type="Material" id=6]
+[ext_resource path="res://Asset/Material/UI/player_inner_background_orange.material" type="Material" id=7]
+[ext_resource path="res://Asset/Material/UI/player_inner_background_blue.material" type="Material" id=8]
+[ext_resource path="res://Scenes/UI/Parts/Gift_Count_1.tscn" type="PackedScene" id=9]
+[ext_resource path="res://Scenes/UI/Parts/Gift_Count_2_inherit.tscn" type="PackedScene" id=10]
+[ext_resource path="res://Scenes/UI/Parts/Gift_Count_3_inherit.tscn" type="PackedScene" id=11]
+[ext_resource path="res://Scenes/UI/Parts/Gift_Count_4_inherit.tscn" type="PackedScene" id=12]
+[ext_resource path="res://Asset/UI/ui_label_1.png" type="Texture" id=13]
+[ext_resource path="res://Asset/Font/MVP-Font-1_2_2.ttf" type="DynamicFontData" id=14]
+[ext_resource path="res://Asset/UI/player_selection_background.png" type="Texture" id=15]
+[ext_resource path="res://Asset/Material/UI/ui_ingame_ui_score_inner.tres" type="Material" id=16]
+[ext_resource path="res://Asset/UI/ui_player_settings_background.png" type="Texture" id=17]
+[ext_resource path="res://Asset/Font/PlaceholderLabel.tscn" type="PackedScene" id=18]
+[ext_resource path="res://Asset/Font/DynamicFont1_MVP-Font-1.res" type="DynamicFont" id=19]
+[ext_resource path="res://Asset/UI/ui_disabled.png" type="Texture" id=20]
+[ext_resource path="res://Asset/Material/UI/ui_ingame_ui_score_buttons.tres" type="Material" id=21]
+[ext_resource path="res://Asset/Sound/AudioStreamPlayer_Button.tscn" type="PackedScene" id=22]
+
+[sub_resource type="GDScript" id=1]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends Control
+
+export (NodePath) var Win_Message_Node #depends on the game goal
+export (NodePath) var ScoreContainer #contains the player score info for this round
+export (NodePath) var WinContainerBG #transparent background for the score list
+export (NodePath) var WinContainer #contains all the score elements
+export (NodePath) var BackToMenuButton #back to main menu
+export (NodePath) var NewGameButton #starts a new game with the same settings
+
+export (Array, Texture) var gift_textures = []
+export (Array, Material) var ScoreContainerPlayerNameColors = []
+
+
+signal mainmenu
+signal restart
+
+func _on_BackToMenuButton_pressed():
+	print(\"Test\")
+	emit_signal(\"mainmenu\")
+
+#set the message that will show up above \"Score\" when the goal of the game was reached
+func set_win_message(message:String):
+	get_node(Win_Message_Node).text = message
+
+
+
+func _ready():
+	var test = [
+		[100, \"Knirk\", 2],
+		[2, \"Schnapp\", 3],
+		[100, \"SCHNUPP\", 1],
+		[300, \"Jawoll!\", 0],
+	]
+	
+	set_score_information(test)
+#function to set the visible score information after end of round
+#WinInformationDict = [{}] //player_name, score, win_id 
+# -> win_id(= placing, multiple players can have the same win_id, if they gathered the same amount of gifts)
+#func set_score_information(WinInformationDicts):
+#	var ranked_player_slot_list = get_node(ScoreContainer).get_children()#list of ranking player slots
+#	var dict = WinInformationDicts #list with dictionaries with info about the ranking
+#	var win_id_list = []
+#
+#
+#	for id in dict:
+#		var rank_slot = ranked_player_slot_list[id.win_id]
+#		var rank_id = id.win_id
+#		#spieler auf dem gleichen platz sollten die gleiche platzierung aber unterschiedliche daten haben
+#		win_id_list.append(id.win_id)
+#
+#
+#		if id.win_id in win_id_list:
+#			rank_slot = ranked_player_slot_list[id.win_id]
+#
+#		rank_slot.get_node(\"PlacingBackground/Placing\").text = str(id.win_id + 1) + \".\"
+#		rank_slot.get_node(\"PlayerNameBackground/PlayerName\").text = id.player_name
+#		rank_slot.get_node(\"PlayerScore\").text = str(id.score)
+#
+#	if ranked_player_slot_list.size() != dict.size():
+#		var slot_id = ranked_player_slot_list.size() - 1 #slot_id that should be hidden 
+#		var hide_bar = ranked_player_slot_list.size() - dict.size() # How many slots shall be hidden?
+#
+#		for i in range(hide_bar):
+#			ranked_player_slot_list[slot_id].visible = false
+#			slot_id -= 1
+
+class CustomSortScore:
+    static func sort_score_array(a, b):
+        if a[0] > b[0]:
+            return true
+        return false
+		
+func set_score_information(win_array):
+	var win_information = win_array #requires [[score, player_name,player_ID],[score, player_name,player_ID],...]
+	
+	win_information.sort_custom(CustomSortScore, \"sort_score_array\") #sort array by max score
+	
+	var score_slots = get_node(ScoreContainer).get_children() #list of all availble ranking slots
+
+	var placing_ID = 0 # starting point for placing, 0 is the first visible place
+	var same_score = 0
+	var current_score
+	var last_score
+	
+	#set the win information per ranking slot
+	for rank in win_information:
+		#set player name
+		score_slots[placing_ID].get_node(\"PlayerNameBackground/PlayerName\").text = rank[1]
+	
+		#score processing
+		#check if the score is like the score of the previous player
+		current_score = rank[0]
+		if current_score == last_score:
+			same_score += 1
+		else:
+			same_score = 0
+	
+		#set the score
+		score_slots[placing_ID].get_node(\"PlayerScore\").text = str(current_score)
+
+		#set the placing number
+		score_slots[placing_ID].get_node(\"PlacingBackground/Placing\").text = str(placing_ID - same_score + 1) + \".\"
+		
+		#set the gift color in accordance with the player_color/player_ID
+		score_slots[placing_ID].get_node(\"PlayerGiftTexture\").set_texture(gift_textures[win_information[placing_ID][2]-1])
+		
+		#set the player name color in accordance with the player_color/player_ID
+		score_slots[placing_ID].get_node(\"PlayerNameBackground/PlayerName\").set_material(ScoreContainerPlayerNameColors[win_information[placing_ID][2]-1])
+		
+		
+		
+	
+		placing_ID += 1#next playe in order
+		last_score = current_score#cache the last score
+	
+	#make unused slots invisible
+	if score_slots.size() > win_information.size():
+		#find out the number of unused slots
+		var score_slots_number = score_slots.size()
+		var unused_slots = score_slots_number - win_information.size()
+		var invisible_slot_ID = 1 #helper
+		for i in range(unused_slots):
+			score_slots[score_slots_number - invisible_slot_ID].visible = false
+			invisible_slot_ID += 1
+
+	
+	
+	
+
+func _on_NewGameButton_pressed():
+	emit_signal(\"restart\")
+"
+
+[sub_resource type="DynamicFontData" id=2]
+font_path = "res://Asset/Font/MVP-Font-1_2_2.ttf"
+
+[sub_resource type="DynamicFont" id=3]
+size = 40
+outline_size = 3
+outline_color = Color( 0, 0, 0, 1 )
+use_filter = true
+font_data = SubResource( 2 )
+
+[sub_resource type="DynamicFont" id=4]
+size = 24
+font_data = ExtResource( 14 )
+
+[sub_resource type="StyleBoxFlat" id=5]
+bg_color = Color( 0, 0.439216, 1, 0.215686 )
+
+[sub_resource type="GDScript" id=6]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends VBoxContainer
+
+export (NodePath) var LabelBackToMenu
+export (NodePath) var ButtonBackToMenuBG #TextureButton
+export (NodePath) var LabelNewGame
+export (NodePath) var ButtonNewGameBG #TextureButton
+export (Color) var HoverColor
+
+var ButtonTextColorDefault
+
+func _ready():
+	get_node(ButtonBackToMenuBG).connect(\"mouse_entered\", self, \"_on_mouse_entered_BackToMenu\")
+	get_node(ButtonBackToMenuBG).connect(\"mouse_exited\", self, \"_on_mouse_exited_BackToMenu\")
+	
+	get_node(ButtonNewGameBG).connect(\"mouse_entered\", self, \"_on_mouse_entered_NewGame\")
+	get_node(ButtonNewGameBG).connect(\"mouse_exited\", self, \"_on_mouse_exited_NewGame\")
+	
+	ButtonTextColorDefault = get_node(LabelBackToMenu).get(\"custom_colors/font_color\")
+	
+	pass
+
+
+func _on_mouse_entered_BackToMenu():
+	get_node(LabelBackToMenu).set(\"custom_colors/font_color\", HoverColor)
+	pass
+	
+func _on_mouse_exited_BackToMenu():
+	get_node(LabelBackToMenu).set(\"custom_colors/font_color\", ButtonTextColorDefault)
+	pass
+
+
+func _on_mouse_entered_NewGame():
+	get_node(LabelNewGame).set(\"custom_colors/font_color\", HoverColor) #f6ce63
+	pass
+
+func _on_mouse_exited_NewGame():
+	get_node(LabelNewGame).set(\"custom_colors/font_color\", ButtonTextColorDefault)
+	pass"
+
+[sub_resource type="DynamicFontData" id=7]
+font_path = "res://Asset/Font/MVP-Font-1_2_2.ttf"
+
+[sub_resource type="DynamicFont" id=8]
+size = 60
+outline_size = 3
+outline_color = Color( 0.027451, 0.113725, 0.156863, 0.886275 )
+use_filter = true
+font_data = SubResource( 7 )
+
+[sub_resource type="DynamicFontData" id=9]
+font_path = "res://Asset/Font/MVP-Font-1_2_2.ttf"
+
+[sub_resource type="DynamicFont" id=10]
+size = 50
+outline_size = 3
+outline_color = Color( 0, 0, 0, 1 )
+use_filter = true
+font_data = SubResource( 9 )
+
+[sub_resource type="DynamicFont" id=11]
+size = 32
+outline_color = Color( 0, 0, 0, 1 )
+font_data = ExtResource( 14 )
+
+[sub_resource type="DynamicFontData" id=12]
+font_path = "res://Asset/Font/MVP-Font-1_2_2.ttf"
+
+[sub_resource type="DynamicFont" id=13]
+size = 30
+outline_size = 3
+outline_color = Color( 0.027451, 0.113725, 0.156863, 0.886275 )
+use_filter = true
+font_data = SubResource( 12 )
+
+[node name="ingame_UI" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = SubResource( 1 )
+Win_Message_Node = NodePath("WinContainer/ScoreContentContainer/WinMessage")
+ScoreContainer = NodePath("WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer")
+WinContainerBG = NodePath("WinContainerBackground")
+WinContainer = NodePath("WinContainer")
+BackToMenuButton = NodePath("WinContainer/ScoreContentContainer/ButtonsBottom/BackToMenuButton")
+NewGameButton = NodePath("WinContainer/ScoreContentContainer/ButtonsBottom/NewGameButton")
+gift_textures = [ ExtResource( 1 ), ExtResource( 2 ), ExtResource( 3 ), ExtResource( 4 ) ]
+ScoreContainerPlayerNameColors = [ ExtResource( 5 ), ExtResource( 6 ), ExtResource( 7 ), ExtResource( 8 ) ]
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+editor/display_folded = true
+anchor_top = 0.845
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_top = -3.05176e-05
+margin_bottom = -19.0
+custom_constants/separation = 100
+alignment = 1
+
+[node name="Gift_Count_Red" parent="HBoxContainer" instance=ExtResource( 9 )]
+margin_left = 190.0
+margin_right = 340.0
+margin_bottom = 92.0
+rect_min_size = Vector2( 150, 50 )
+
+[node name="NameContainer" type="CenterContainer" parent="HBoxContainer/Gift_Count_Red"]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = -131.5
+margin_top = -54.0
+margin_right = 131.5
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/Gift_Count_Red/NameContainer"]
+margin_left = 26.0
+margin_right = 236.0
+margin_bottom = 64.0
+custom_constants/margin_top = 25
+
+[node name="Name" type="Label" parent="HBoxContainer/Gift_Count_Red/NameContainer/MarginContainer"]
+margin_top = 25.0
+margin_right = 210.0
+margin_bottom = 64.0
+custom_fonts/font = SubResource( 3 )
+text = "PlayerName"
+
+[node name="Gift_Count_Green" parent="HBoxContainer" instance=ExtResource( 10 )]
+margin_left = 440.0
+margin_right = 590.0
+margin_bottom = 92.0
+rect_min_size = Vector2( 150, 0 )
+
+[node name="NameContainer" type="CenterContainer" parent="HBoxContainer/Gift_Count_Green"]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = -131.5
+margin_top = -54.0
+margin_right = 131.5
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/Gift_Count_Green/NameContainer"]
+margin_left = 26.0
+margin_right = 236.0
+margin_bottom = 64.0
+custom_constants/margin_top = 25
+
+[node name="Name" type="Label" parent="HBoxContainer/Gift_Count_Green/NameContainer/MarginContainer"]
+margin_top = 25.0
+margin_right = 210.0
+margin_bottom = 64.0
+custom_fonts/font = SubResource( 3 )
+text = "PlayerName"
+
+[node name="Gift_Count_Orange" parent="HBoxContainer" instance=ExtResource( 11 )]
+margin_left = 690.0
+margin_right = 840.0
+margin_bottom = 92.0
+rect_min_size = Vector2( 150, 0 )
+
+[node name="NameContainer" type="CenterContainer" parent="HBoxContainer/Gift_Count_Orange"]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = -131.5
+margin_top = -54.0
+margin_right = 131.5
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/Gift_Count_Orange/NameContainer"]
+margin_left = 26.0
+margin_right = 236.0
+margin_bottom = 64.0
+custom_constants/margin_top = 25
+
+[node name="Name" type="Label" parent="HBoxContainer/Gift_Count_Orange/NameContainer/MarginContainer"]
+margin_top = 25.0
+margin_right = 210.0
+margin_bottom = 64.0
+custom_fonts/font = SubResource( 3 )
+text = "PlayerName"
+
+[node name="Gift_Count_Blue" parent="HBoxContainer" instance=ExtResource( 12 )]
+margin_left = 940.0
+margin_right = 1090.0
+margin_bottom = 92.0
+rect_min_size = Vector2( 150, 0 )
+
+[node name="NameContainer" type="CenterContainer" parent="HBoxContainer/Gift_Count_Blue"]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = -131.5
+margin_top = -54.0
+margin_right = 131.5
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/Gift_Count_Blue/NameContainer"]
+margin_left = 26.0
+margin_right = 236.0
+margin_bottom = 64.0
+custom_constants/margin_top = 25
+
+[node name="Name" type="Label" parent="HBoxContainer/Gift_Count_Blue/NameContainer/MarginContainer"]
+margin_top = 25.0
+margin_right = 210.0
+margin_bottom = 64.0
+custom_fonts/font = SubResource( 3 )
+text = "PlayerName"
+
+[node name="TextureRect" type="TextureRect" parent="."]
+editor/display_folded = true
+anchor_right = 1.0
+anchor_bottom = 0.16
+margin_top = 16.0
+margin_bottom = -48.2
+texture = ExtResource( 13 )
+expand = true
+stretch_mode = 6
+
+[node name="Label" type="Label" parent="TextureRect"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -640.0
+margin_top = -19.5
+margin_right = 640.0
+margin_bottom = 25.5
+custom_fonts/font = SubResource( 4 )
+text = "TIME"
+align = 1
+valign = 1
+
+[node name="WinContainerBackground" type="Panel" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+rect_min_size = Vector2( 1280, 720 )
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_styles/panel = SubResource( 5 )
+
+[node name="WinContainer" type="CenterContainer" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="ScoreBackground" type="TextureRect" parent="WinContainer"]
+margin_left = 215.0
+margin_top = 72.0
+margin_right = 1065.0
+margin_bottom = 647.0
+rect_min_size = Vector2( 850, 575 )
+texture = ExtResource( 15 )
+expand = true
+stretch_mode = 1
+
+[node name="ScoreContentContainer" type="VBoxContainer" parent="WinContainer"]
+margin_left = 350.0
+margin_top = 147.0
+margin_right = 929.0
+margin_bottom = 572.0
+custom_constants/separation = 12
+alignment = 1
+script = SubResource( 6 )
+LabelBackToMenu = NodePath("ButtonsBottom/BackToMenuButton/BackToMenu")
+ButtonBackToMenuBG = NodePath("ButtonsBottom/BackToMenuButton")
+LabelNewGame = NodePath("ButtonsBottom/NewGameButton/NewGame")
+ButtonNewGameBG = NodePath("ButtonsBottom/NewGameButton")
+HoverColor = Color( 0.854902, 0.694118, 0.262745, 1 )
+
+[node name="WinMessage" type="Label" parent="WinContainer/ScoreContentContainer"]
+margin_right = 579.0
+margin_bottom = 57.0
+custom_fonts/font = SubResource( 8 )
+custom_colors/font_color = Color( 0.964706, 0.756863, 0.360784, 1 )
+text = "TIME IS UP!"
+align = 1
+valign = 1
+
+[node name="WinMessageScore" type="Label" parent="WinContainer/ScoreContentContainer"]
+visible = false
+margin_top = 69.0
+margin_right = 637.0
+margin_bottom = 118.0
+custom_fonts/font = SubResource( 10 )
+text = "SCORE:"
+align = 1
+
+[node name="ScoreBackground" type="TextureRect" parent="WinContainer/ScoreContentContainer"]
+margin_top = 69.0
+margin_right = 579.0
+margin_bottom = 69.0
+
+[node name="MarginContainer" type="MarginContainer" parent="WinContainer/ScoreContentContainer"]
+editor/display_folded = true
+margin_top = 81.0
+margin_right = 579.0
+margin_bottom = 353.0
+custom_constants/margin_bottom = 39
+
+[node name="ScoreContainer" type="VBoxContainer" parent="WinContainer/ScoreContentContainer/MarginContainer"]
+margin_right = 579.0
+margin_bottom = 233.0
+custom_constants/separation = 11
+alignment = 1
+
+[node name="ScorePlayer_1" type="HBoxContainer" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer"]
+margin_right = 579.0
+margin_bottom = 50.0
+custom_constants/separation = 26
+alignment = 1
+
+[node name="PlacingBackground" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_1"]
+self_modulate = Color( 1, 1, 1, 0.384314 )
+material = ExtResource( 16 )
+margin_right = 50.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 50, 50 )
+texture = ExtResource( 17 )
+expand = true
+stretch_mode = 1
+
+[node name="Placing" type="Label" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_1/PlacingBackground"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -8.0
+margin_top = -15.5
+margin_right = 8.0
+margin_bottom = 15.5
+custom_fonts/font = SubResource( 11 )
+text = "1."
+
+[node name="PlayerNameBackground" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_1"]
+self_modulate = Color( 1, 1, 1, 0.384314 )
+material = ExtResource( 16 )
+margin_left = 76.0
+margin_right = 376.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 300, 50 )
+texture = ExtResource( 17 )
+expand = true
+stretch_mode = 1
+
+[node name="PlayerName" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_1/PlayerNameBackground" instance=ExtResource( 18 )]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -138.0
+margin_top = -15.5
+margin_right = 138.0
+margin_bottom = 15.5
+
+[node name="PlayerScore" type="Label" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_1"]
+margin_left = 402.0
+margin_top = 9.0
+margin_right = 452.0
+margin_bottom = 40.0
+rect_min_size = Vector2( 50, 0 )
+custom_fonts/font = ExtResource( 19 )
+text = "100"
+align = 1
+valign = 1
+
+[node name="PlayerScoreX" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_1"]
+margin_left = 478.0
+margin_right = 503.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 25, 25 )
+texture = ExtResource( 20 )
+expand = true
+stretch_mode = 6
+
+[node name="PlayerGiftTexture" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_1"]
+margin_left = 529.0
+margin_right = 579.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 50, 50 )
+texture = ExtResource( 1 )
+expand = true
+stretch_mode = 6
+
+[node name="ScorePlayer_2" type="HBoxContainer" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer"]
+margin_top = 61.0
+margin_right = 579.0
+margin_bottom = 111.0
+custom_constants/separation = 26
+alignment = 1
+
+[node name="PlacingBackground" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_2"]
+self_modulate = Color( 1, 1, 1, 0.384314 )
+material = ExtResource( 16 )
+margin_right = 50.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 50, 50 )
+texture = ExtResource( 17 )
+expand = true
+stretch_mode = 1
+
+[node name="Placing" type="Label" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_2/PlacingBackground"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -8.0
+margin_top = -15.5
+margin_right = 8.0
+margin_bottom = 15.5
+custom_fonts/font = SubResource( 11 )
+text = "1."
+
+[node name="PlayerNameBackground" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_2"]
+self_modulate = Color( 1, 1, 1, 0.384314 )
+material = ExtResource( 16 )
+margin_left = 76.0
+margin_right = 376.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 300, 50 )
+texture = ExtResource( 17 )
+expand = true
+stretch_mode = 1
+
+[node name="PlayerName" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_2/PlayerNameBackground" instance=ExtResource( 18 )]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -138.0
+margin_top = -15.5
+margin_right = 138.0
+margin_bottom = 15.5
+
+[node name="PlayerScore" type="Label" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_2"]
+margin_left = 402.0
+margin_top = 9.0
+margin_right = 452.0
+margin_bottom = 40.0
+rect_min_size = Vector2( 50, 0 )
+custom_fonts/font = ExtResource( 19 )
+text = "100"
+align = 1
+valign = 1
+
+[node name="PlayerScoreX" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_2"]
+margin_left = 478.0
+margin_right = 503.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 25, 25 )
+texture = ExtResource( 20 )
+expand = true
+stretch_mode = 6
+
+[node name="PlayerGiftTexture" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_2"]
+margin_left = 529.0
+margin_right = 579.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 50, 50 )
+texture = ExtResource( 1 )
+expand = true
+stretch_mode = 6
+
+[node name="ScorePlayer_3" type="HBoxContainer" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer"]
+margin_top = 122.0
+margin_right = 579.0
+margin_bottom = 172.0
+custom_constants/separation = 26
+alignment = 1
+
+[node name="PlacingBackground" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_3"]
+editor/display_folded = true
+self_modulate = Color( 1, 1, 1, 0.384314 )
+material = ExtResource( 16 )
+margin_right = 50.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 50, 50 )
+texture = ExtResource( 17 )
+expand = true
+stretch_mode = 1
+
+[node name="Placing" type="Label" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_3/PlacingBackground"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -8.0
+margin_top = -15.5
+margin_right = 8.0
+margin_bottom = 15.5
+custom_fonts/font = SubResource( 11 )
+text = "1."
+
+[node name="PlayerNameBackground" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_3"]
+self_modulate = Color( 1, 1, 1, 0.384314 )
+material = ExtResource( 16 )
+margin_left = 76.0
+margin_right = 376.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 300, 50 )
+texture = ExtResource( 17 )
+expand = true
+stretch_mode = 1
+
+[node name="PlayerName" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_3/PlayerNameBackground" instance=ExtResource( 18 )]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -138.0
+margin_top = -15.5
+margin_right = 138.0
+margin_bottom = 15.5
+
+[node name="PlayerScore" type="Label" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_3"]
+margin_left = 402.0
+margin_top = 9.0
+margin_right = 452.0
+margin_bottom = 40.0
+rect_min_size = Vector2( 50, 0 )
+custom_fonts/font = ExtResource( 19 )
+text = "100"
+align = 1
+valign = 1
+
+[node name="PlayerScoreX" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_3"]
+margin_left = 478.0
+margin_right = 503.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 25, 25 )
+texture = ExtResource( 20 )
+expand = true
+stretch_mode = 6
+
+[node name="PlayerGiftTexture" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_3"]
+margin_left = 529.0
+margin_right = 579.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 50, 50 )
+texture = ExtResource( 1 )
+expand = true
+stretch_mode = 6
+
+[node name="ScorePlayer_4" type="HBoxContainer" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer"]
+margin_top = 183.0
+margin_right = 579.0
+margin_bottom = 233.0
+custom_constants/separation = 26
+alignment = 1
+
+[node name="PlacingBackground" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_4"]
+self_modulate = Color( 1, 1, 1, 0.384314 )
+material = ExtResource( 16 )
+margin_right = 50.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 50, 50 )
+texture = ExtResource( 17 )
+expand = true
+stretch_mode = 1
+
+[node name="Placing" type="Label" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_4/PlacingBackground"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -8.0
+margin_top = -15.5
+margin_right = 8.0
+margin_bottom = 15.5
+custom_fonts/font = SubResource( 11 )
+text = "1."
+
+[node name="PlayerNameBackground" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_4"]
+self_modulate = Color( 1, 1, 1, 0.384314 )
+material = ExtResource( 16 )
+margin_left = 76.0
+margin_right = 376.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 300, 50 )
+texture = ExtResource( 17 )
+expand = true
+stretch_mode = 1
+
+[node name="PlayerName" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_4/PlayerNameBackground" instance=ExtResource( 18 )]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -138.0
+margin_top = -15.5
+margin_right = 138.0
+margin_bottom = 15.5
+
+[node name="PlayerScore" type="Label" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_4"]
+margin_left = 402.0
+margin_top = 9.0
+margin_right = 452.0
+margin_bottom = 40.0
+rect_min_size = Vector2( 50, 0 )
+custom_fonts/font = ExtResource( 19 )
+text = "100"
+align = 1
+valign = 1
+
+[node name="PlayerScoreX" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_4"]
+margin_left = 478.0
+margin_right = 503.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 25, 25 )
+texture = ExtResource( 20 )
+expand = true
+stretch_mode = 6
+
+[node name="PlayerGiftTexture" type="TextureRect" parent="WinContainer/ScoreContentContainer/MarginContainer/ScoreContainer/ScorePlayer_4"]
+margin_left = 529.0
+margin_right = 579.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 50, 50 )
+texture = ExtResource( 1 )
+expand = true
+stretch_mode = 6
+
+[node name="ButtonsBottom" type="HBoxContainer" parent="WinContainer/ScoreContentContainer"]
+margin_top = 365.0
+margin_right = 579.0
+margin_bottom = 425.0
+custom_constants/separation = 50
+alignment = 1
+
+[node name="BackToMenuButton" type="TextureButton" parent="WinContainer/ScoreContentContainer/ButtonsBottom"]
+material = ExtResource( 21 )
+margin_left = 14.0
+margin_right = 264.0
+margin_bottom = 60.0
+rect_min_size = Vector2( 250, 60 )
+texture_normal = ExtResource( 17 )
+expand = true
+
+[node name="AudioStreamPlayer" parent="WinContainer/ScoreContentContainer/ButtonsBottom/BackToMenuButton" instance=ExtResource( 22 )]
+
+[node name="BackToMenu" type="Label" parent="WinContainer/ScoreContentContainer/ButtonsBottom/BackToMenuButton"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -91.0
+margin_top = -17.5
+margin_right = 91.0
+margin_bottom = 17.5
+custom_fonts/font = SubResource( 13 )
+custom_colors/font_color = Color( 0.964706, 0.756863, 0.360784, 1 )
+text = "Back to Menu"
+align = 1
+valign = 1
+
+[node name="NewGameButton" type="TextureButton" parent="WinContainer/ScoreContentContainer/ButtonsBottom"]
+material = ExtResource( 21 )
+margin_left = 314.0
+margin_right = 564.0
+margin_bottom = 60.0
+rect_min_size = Vector2( 250, 60 )
+texture_normal = ExtResource( 17 )
+expand = true
+
+[node name="AudioStreamPlayer" parent="WinContainer/ScoreContentContainer/ButtonsBottom/NewGameButton" instance=ExtResource( 22 )]
+
+[node name="NewGame" type="Label" parent="WinContainer/ScoreContentContainer/ButtonsBottom/NewGameButton"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -91.0
+margin_top = -17.5
+margin_right = 91.0
+margin_bottom = 17.5
+custom_fonts/font = SubResource( 13 )
+custom_colors/font_color = Color( 0.964706, 0.756863, 0.360784, 1 )
+text = "New Game"
+align = 1
+valign = 1
+[connection signal="pressed" from="WinContainer/ScoreContentContainer/ButtonsBottom/BackToMenuButton" to="." method="_on_BackToMenuButton_pressed"]
+[connection signal="pressed" from="WinContainer/ScoreContentContainer/ButtonsBottom/NewGameButton" to="." method="_on_NewGameButton_pressed"]

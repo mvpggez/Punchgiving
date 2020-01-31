@@ -1,0 +1,41 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://Asset/Sound/Klackern.ogg" type="AudioStream" id=1]
+
+[sub_resource type="GDScript" id=1]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends AudioStreamPlayer
+
+var sound_hover = preload(\"res://Asset/Sound/Plaph.ogg\")
+var sound_pressed_down = preload(\"res://Asset/Sound/Klackern.ogg\")
+
+func _ready():
+	self.get_parent().connect(\"mouse_entered\", self, \"on_mouse_entered_parent_button\")
+	self.get_parent().connect(\"button_down\", self, \"on_mouse_pressed_parent_button_down\")
+
+
+func on_mouse_entered_parent_button():
+	self.set_stream(sound_hover)
+	self.get_stream().loop = false
+	self.set_bus(\"Master\")
+	self.set_volume_db(-16)
+	self.playing = true
+
+func on_mouse_pressed_parent_button_down():
+	self.set_stream(sound_pressed_down)
+	self.get_stream().loop = false
+	self.set_bus(\"Master\")
+	self.set_volume_db(-20)
+	self.playing = true"
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer"]
+stream = ExtResource( 1 )
+volume_db = -15.0
+script = SubResource( 1 )

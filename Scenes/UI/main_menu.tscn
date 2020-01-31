@@ -1,0 +1,428 @@
+[gd_scene load_steps=28 format=2]
+
+[ext_resource path="res://Scenes/UI/Parts/moving_background.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Asset/UI/title_2.png" type="Texture" id=2]
+[ext_resource path="res://Asset/UI/main_menu_center2.png" type="Texture" id=3]
+[ext_resource path="res://Asset/UI/ui_label_1.png" type="Texture" id=4]
+[ext_resource path="res://Asset/Font/MVP-Font-1_2_2.ttf" type="DynamicFontData" id=5]
+[ext_resource path="res://Asset/Sound/AudioStreamPlayer_Button.tscn" type="PackedScene" id=6]
+[ext_resource path="res://Asset/UI/ui_character_selection_background.png" type="Texture" id=7]
+[ext_resource path="res://Asset/UI/ui_character_sound_background.png" type="Texture" id=8]
+[ext_resource path="res://Asset/UI/ui_character_sound_note.png" type="Texture" id=9]
+[ext_resource path="res://Asset/UI/ui_disabled.png" type="Texture" id=10]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+uniform sampler2D color_gradient: hint_albedo;
+
+void fragment()
+{
+	vec4 grey_texture = texture(TEXTURE, UV);
+	COLOR.rgb = texture(color_gradient, vec2(grey_texture.r,0.0)).rgb;
+	COLOR.a = grey_texture.a;
+	
+}"
+
+[sub_resource type="Gradient" id=2]
+offsets = PoolRealArray( 0.0027248, 0.0653951, 0.354223, 0.463215 )
+colors = PoolColorArray( 1, 0.87854, 0.222656, 1, 0.991654, 0.221437, 0.221437, 1, 0.986242, 0.23959, 0.220646, 1, 0.964706, 0.756863, 0.360784, 1 )
+
+[sub_resource type="GradientTexture" id=3]
+gradient = SubResource( 2 )
+width = 256
+
+[sub_resource type="ShaderMaterial" id=4]
+shader = SubResource( 1 )
+shader_param/color_gradient = SubResource( 3 )
+
+[sub_resource type="Gradient" id=5]
+colors = PoolColorArray( 0.283264, 0.398438, 0.287763, 1, 0.14902, 0.184314, 0.282353, 1 )
+
+[sub_resource type="GradientTexture" id=6]
+gradient = SubResource( 5 )
+width = 256
+
+[sub_resource type="DynamicFont" id=7]
+size = 30
+font_data = ExtResource( 5 )
+
+[sub_resource type="DynamicFont" id=8]
+size = 24
+outline_size = 4
+outline_color = Color( 0.027451, 0.113725, 0.156863, 0.886275 )
+font_data = ExtResource( 5 )
+
+[sub_resource type="DynamicFont" id=9]
+size = 20
+outline_size = 2
+outline_color = Color( 0.027451, 0.113725, 0.156863, 0.886275 )
+font_data = ExtResource( 5 )
+
+[sub_resource type="DynamicFont" id=10]
+size = 14
+outline_size = 1
+outline_color = Color( 0.027451, 0.113725, 0.156863, 0.886275 )
+font_data = ExtResource( 5 )
+
+[sub_resource type="Shader" id=11]
+code = "shader_type canvas_item;
+
+void fragment()
+{
+	COLOR = texture(TEXTURE, vec2(1.0 - UV.y,UV.x));
+}"
+
+[sub_resource type="ShaderMaterial" id=12]
+shader = SubResource( 11 )
+
+[sub_resource type="Gradient" id=13]
+colors = PoolColorArray( 0.188235, 0.203922, 0.258824, 1, 0.210938, 0.103821, 0.103821, 1 )
+
+[sub_resource type="GradientTexture" id=14]
+gradient = SubResource( 13 )
+
+[sub_resource type="StyleBoxTexture" id=15]
+texture = SubResource( 14 )
+region_rect = Rect2( 0, 0, 2048, 1 )
+
+[sub_resource type="StyleBoxFlat" id=16]
+bg_color = Color( 0.188235, 0.203922, 0.258824, 1 )
+
+[sub_resource type="GDScript" id=17]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends TextureButton
+
+var sound_enabled = true
+
+func _ready():
+	self.connect(\"mouse_entered\",self,\"on_mouse_entered\")
+	self.connect(\"mouse_exited\",self,\"on_mouse_exited\")
+	self.connect(\"button_down\",self,\"on_button_down\")
+	pass
+
+func on_mouse_entered():
+	self.self_modulate = Color(\"0d3c1d\")
+	pass
+	
+func on_mouse_exited():
+	self.self_modulate = Color(\"3c0d0d\")
+	pass
+
+func on_button_down():
+	if sound_enabled == true:
+		sound_enabled = false
+		AudioServer.set_bus_mute(0,true)
+		self.get_node(\"soundtrack_disabled\").show()
+		print(\"disabled\")
+	else:
+		sound_enabled = true
+		AudioServer.set_bus_mute(0,false)
+		self.get_node(\"soundtrack_disabled\").hide()
+		print(\"enabled\")
+	pass
+	
+	#3c0d0d, red
+	#0d3c1d, green"
+
+[node name="Control" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Moving_Background" parent="." instance=ExtResource( 1 )]
+
+[node name="TextureRect2" type="TextureRect" parent="."]
+material = SubResource( 4 )
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -694.191
+margin_top = -368.433
+margin_right = -42.1913
+margin_bottom = 283.567
+rect_rotation = -16.7179
+texture = ExtResource( 2 )
+expand = true
+stretch_mode = 6
+
+[node name="TextureRect" type="TextureRect" parent="."]
+modulate = Color( 1, 1, 1, 0.945098 )
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -97.0
+margin_top = -360.0
+margin_right = 640.0
+margin_bottom = 360.0
+rect_min_size = Vector2( 600, 600 )
+texture = ExtResource( 3 )
+expand = true
+stretch_mode = 6
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TextureRect"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -258.0
+margin_top = 12.0
+margin_right = 258.0
+margin_bottom = 272.0
+custom_constants/separation = 28
+alignment = 1
+
+[node name="TextureButton" type="TextureButton" parent="TextureRect/VBoxContainer"]
+margin_top = 43.0
+margin_right = 516.0
+margin_bottom = 116.94
+rect_min_size = Vector2( 75, 73.94 )
+texture_normal = ExtResource( 4 )
+expand = true
+stretch_mode = 5
+
+[node name="TextureRect" type="TextureRect" parent="TextureRect/VBoxContainer/TextureButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 198.0
+margin_top = 13.0
+margin_right = -197.0
+margin_bottom = -12.94
+texture = SubResource( 6 )
+expand = true
+
+[node name="Button" type="Button" parent="TextureRect/VBoxContainer/TextureButton"]
+editor/display_folded = true
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -60.0
+margin_top = -23.97
+margin_right = 61.0
+margin_bottom = 25.03
+custom_fonts/font = SubResource( 7 )
+custom_colors/font_color = Color( 0.898039, 0.721569, 0.262745, 1 )
+custom_colors/font_color_hover = Color( 0.921569, 0.670588, 0, 1 )
+text = "Play!"
+flat = true
+
+[node name="AudioStreamPlayer" parent="TextureRect/VBoxContainer/TextureButton/Button" instance=ExtResource( 6 )]
+
+[node name="TextureButton2" type="TextureButton" parent="TextureRect/VBoxContainer"]
+visible = false
+margin_top = 105.0
+margin_right = 516.0
+margin_bottom = 155.0
+rect_min_size = Vector2( 75, 50 )
+texture_normal = ExtResource( 4 )
+expand = true
+stretch_mode = 5
+
+[node name="Button2" type="Button" parent="TextureRect/VBoxContainer/TextureButton2"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -48.5
+margin_top = -25.0
+margin_right = 48.5
+margin_bottom = 25.0
+custom_fonts/font = SubResource( 7 )
+custom_colors/font_color = Color( 1, 0.917647, 0.701961, 1 )
+custom_colors/font_color_hover = Color( 0.921569, 0.670588, 0, 1 )
+text = "Settings"
+flat = true
+
+[node name="AudioStreamPlayer2" parent="TextureRect/VBoxContainer/TextureButton2/Button2" instance=ExtResource( 6 )]
+
+[node name="TextureButton3" type="TextureButton" parent="TextureRect/VBoxContainer"]
+margin_top = 144.0
+margin_right = 516.0
+margin_bottom = 217.94
+rect_min_size = Vector2( 75, 73.94 )
+texture_normal = ExtResource( 4 )
+expand = true
+stretch_mode = 5
+
+[node name="TextureRect2" type="TextureRect" parent="TextureRect/VBoxContainer/TextureButton3"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 198.0
+margin_top = 12.8669
+margin_right = -197.0
+margin_bottom = -13.0731
+texture = SubResource( 6 )
+expand = true
+
+[node name="Button3" type="Button" parent="TextureRect/VBoxContainer/TextureButton3"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -60.0
+margin_top = -23.97
+margin_right = 61.0
+margin_bottom = 25.03
+custom_fonts/font = SubResource( 7 )
+custom_colors/font_color = Color( 0.898039, 0.721569, 0.262745, 1 )
+custom_colors/font_color_hover = Color( 0.921569, 0.670588, 0, 1 )
+text = "Exit"
+flat = true
+
+[node name="AudioStreamPlayer3" parent="TextureRect/VBoxContainer/TextureButton3/Button3" instance=ExtResource( 6 )]
+
+[node name="Label" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -264.533
+margin_top = -19.9969
+margin_right = 37.467
+margin_bottom = 328.003
+custom_fonts/font = SubResource( 8 )
+custom_colors/font_color = Color( 0.964706, 0.756863, 0.360784, 1 )
+text = "Moin Moin!
+This Game is our entry 
+for the Jingle Jam 2019!
+
+We hope you enjoy it
+and 
+wish you a
+Merry
+Christmas!
+
+MVP GG EZ
+
+Revan Lades Sayonn WAMBO"
+align = 1
+
+[node name="Label2" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -603.0
+margin_top = 201.0
+margin_right = -434.0
+margin_bottom = 290.0
+custom_fonts/font = SubResource( 9 )
+custom_colors/font_color = Color( 1, 0.8, 0.419608, 1 )
+text = "Soundtrack Credits:
+"
+
+[node name="Label3" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -600.06
+margin_top = 226.728
+margin_right = -240.06
+margin_bottom = 315.728
+custom_fonts/font = SubResource( 10 )
+custom_colors/font_color = Color( 1, 0.8, 0.419608, 1 )
+text = "Jingle Bells Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons:
+By Attribution 3.0 License
+http://creativecommons.org/licenses/by/3.0/"
+
+[node name="ui_background_1" type="TextureRect" parent="."]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -295.825
+margin_top = -57.9969
+margin_right = 71.1747
+margin_bottom = 354.003
+texture = ExtResource( 7 )
+expand = true
+
+[node name="Panel" type="Panel" parent="ui_background_1"]
+material = SubResource( 12 )
+margin_left = 16.0659
+margin_top = 19.9152
+margin_right = 351.066
+margin_bottom = 392.915
+custom_styles/panel = SubResource( 15 )
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="ui_background_2" type="TextureRect" parent="."]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -624.997
+margin_top = 178.0
+margin_right = -415.997
+margin_bottom = 316.0
+texture = ExtResource( 7 )
+expand = true
+
+[node name="Panel" type="Panel" parent="ui_background_2"]
+margin_left = 9.0
+margin_top = 6.0
+margin_right = 200.0
+margin_bottom = 131.0
+custom_styles/panel = SubResource( 16 )
+
+[node name="SoundtrackButton" type="TextureRect" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = 514.368
+margin_top = -334.947
+margin_right = 606.368
+margin_bottom = -242.947
+texture = ExtResource( 8 )
+expand = true
+stretch_mode = 6
+
+[node name="TextureButtonNote" type="TextureButton" parent="SoundtrackButton"]
+self_modulate = Color( 0.235294, 0.0509804, 0.0509804, 1 )
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -28.3278
+margin_top = -17.8235
+margin_right = 20.6722
+margin_bottom = 31.1765
+rect_rotation = -18.3144
+mouse_filter = 1
+texture_normal = ExtResource( 9 )
+expand = true
+stretch_mode = 5
+script = SubResource( 17 )
+
+[node name="AudioStreamPlayerSoundtrack" parent="SoundtrackButton/TextureButtonNote" instance=ExtResource( 6 )]
+
+[node name="soundtrack_disabled" type="TextureRect" parent="SoundtrackButton/TextureButtonNote"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -11.2933
+margin_top = -33.8191
+margin_right = 38.7067
+margin_bottom = 16.1809
+rect_rotation = 27.9992
+texture = ExtResource( 10 )
+expand = true
+stretch_mode = 6

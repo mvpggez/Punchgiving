@@ -1,0 +1,15 @@
+[remap]
+
+importer="ogg_vorbis"
+type="AudioStreamOGGVorbis"
+path="res://.import/Plaph.ogg-e3fba5e3db370fb6136bcaaf351e93e2.oggstr"
+
+[deps]
+
+source_file="res://Asset/Sound/Plaph.ogg"
+dest_files=[ "res://.import/Plaph.ogg-e3fba5e3db370fb6136bcaaf351e93e2.oggstr" ]
+
+[params]
+
+loop=true
+loop_offset=0

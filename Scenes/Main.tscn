@@ -1,0 +1,163 @@
+[gd_scene load_steps=7 format=2]
+
+[ext_resource path="res://Asset/Music/AudioStreamPlayer_Soundtrack_JingleBells.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Scenes/UI/main_menu.tscn" type="PackedScene" id=2]
+[ext_resource path="res://Scenes/UI/PlayerSelectionMenu.tscn" type="PackedScene" id=3]
+[ext_resource path="res://Scenes/UI/esc_menu.tscn" type="PackedScene" id=4]
+
+[sub_resource type="GDScript" id=1]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends Node
+
+var world
+var last_game_settings = []
+func _ready():
+	for action in InputMap.get_actions():
+		InputMap.action_erase_events(action)
+	for i in range(4):
+		var action_jump = \"player_\"+str(i + 1)+\"_jump\"
+		var action_left = \"player_\"+str(i + 1)+\"_left\"
+		var action_right = \"player_\"+str(i + 1)+\"_right\"
+		var action_attack = \"player_\"+str(i + 1)+\"_attack\"
+		
+		InputMap.add_action(action_jump, 0.1)
+		InputMap.add_action(action_left, 0.1)
+		InputMap.add_action(action_right, 0.1)
+		InputMap.add_action(action_attack, 0.1)
+
+func _on_start_Button_pressed():
+	$MainMenu.hide()
+	$PlayerSelectionMenu.show()
+
+func start_game(dict):
+	last_game_settings = dict
+	$PlayerSelectionMenu.hide()
+	world = preload(\"res://Scenes/World/World.tscn\").instance()
+	add_child_below_node(get_child(0), world)
+	var id = 1
+	for player in dict[\"player_data_list\"]:
+		var character = world.get_node(\"Character\"+str(id))
+		if player[\"added\"]:
+			if player[\"player_control_status\"] == \"human\":
+				var player_scene = preload(\"res://Scenes/CharacterController/Player.tscn\").instance()
+				player_scene.player_id = id
+				character.add_child(player_scene)
+			else:
+				character.add_child(preload(\"res://Scenes/CharacterController/NPC.tscn\").instance())
+			character.character_name = player[\"player_name\"]
+			character.get_node(\"PlayerMesh/armature_player/player_moustache\").visible = false
+			character.get_node(\"PlayerMesh/armature_player/player_moustache_whitebeard_newgate\").visible = false
+			character.get_node(\"PlayerMesh/armature_player/player_beard_1001\").visible = false
+			character.get_node(\"PlayerMesh/armature_player/player_beard_2001\").visible = false
+			character.get_node(\"PlayerMesh/armature_player/player_beard_3001\").visible = false
+			match player[\"player_beard\"]:
+				\"Moustache1\":
+					character.get_node(\"PlayerMesh/armature_player/player_moustache\").visible = true
+					character.get_node(\"PlayerMesh/armature_player/player_beard_1001\").visible = true
+				\"Moustache2\":
+					character.get_node(\"PlayerMesh/armature_player/player_moustache\").visible = true
+					character.get_node(\"PlayerMesh/armature_player/player_beard_2001\").visible = true
+				\"Moustache3\":
+					character.get_node(\"PlayerMesh/armature_player/player_moustache\").visible = true
+					character.get_node(\"PlayerMesh/armature_player/player_beard_3001\").visible = true
+				\"MoustacheWhitebeardNewgate1\":
+					character.get_node(\"PlayerMesh/armature_player/player_beard_1001\").visible = true
+					character.get_node(\"PlayerMesh/armature_player/player_moustache_whitebeard_newgate\").visible = true
+				\"MoustacheWhitebeardNewgate2\":
+					character.get_node(\"PlayerMesh/armature_player/player_beard_2001\").visible = true
+					character.get_node(\"PlayerMesh/armature_player/player_moustache_whitebeard_newgate\").visible = true
+				\"MoustacheWhitebeardNewgate3\":
+					character.get_node(\"PlayerMesh/armature_player/player_beard_3001\").visible = true
+					character.get_node(\"PlayerMesh/armature_player/player_moustache_whitebeard_newgate\").visible = true
+		else:
+			character.queue_free()
+		id += 1
+
+func _on_exit_Button_pressed():
+	get_tree().quit()
+
+func _on_Control_mainmenu():
+	back_to_menu()
+	
+func restart():
+	world.queue_free()
+	yield(world, \"tree_exited\")
+	start_game(last_game_settings)
+func back_to_menu():
+	$Control.hide()
+	$MainMenu.show()
+	world.queue_free()
+	
+
+func _input(event):
+	if event is InputEventKey and world:
+		if event.pressed and event.scancode == KEY_ESCAPE:
+			if $Control.visible:
+				$Control.hide()
+			else:
+				$Control.show()"
+
+[sub_resource type="GDScript" id=2]
+script/source = "extends AudioStreamPlayer
+
+var soundtrack = preload(\"res://Asset/Music/Jingle Bells 3_Kevin_Mc_Leod.ogg\")
+
+
+func _ready():
+	self.set_stream(soundtrack)
+	self.get_stream().loop = true
+	self.set_bus(\"Master\")
+	self.set_volume_db(-25)
+	self.playing = true
+	pass
+"
+
+[node name="Main" type="Node"]
+script = SubResource( 1 )
+
+[node name="AudioStreamPlayer_Soundtrack_JingleBells" parent="." instance=ExtResource( 1 )]
+script = SubResource( 2 )
+
+[node name="MainMenu" parent="." instance=ExtResource( 2 )]
+
+[node name="Button" parent="MainMenu/TextureRect/VBoxContainer/TextureButton" index="1"]
+editor/display_folded = false
+custom_colors/font_color_hover = Color( 0.964706, 0.807843, 0.388235, 1 )
+custom_colors/font_color_pressed = Color( 0.898039, 0.721569, 0.262745, 1 )
+
+[node name="Button3" parent="MainMenu/TextureRect/VBoxContainer/TextureButton3" index="1"]
+custom_colors/font_color_hover = Color( 0.964706, 0.807843, 0.388235, 1 )
+custom_colors/font_color_pressed = Color( 0.898039, 0.721569, 0.262745, 1 )
+
+[node name="Label" parent="MainMenu" index="3"]
+text = "Moin Moin!
+This Game was our entry 
+for the Jingle Jam 2019!
+
+We hope you enjoy it
+and 
+wish you a
+Merry
+Christmas!
+
+MVP GG EZ
+
+Revan, Lades, Sayonn, Wambo_7"
+
+[node name="PlayerSelectionMenu" parent="." instance=ExtResource( 3 )]
+visible = false
+
+[node name="Control" parent="." instance=ExtResource( 4 )]
+visible = false
+[connection signal="pressed" from="MainMenu/TextureRect/VBoxContainer/TextureButton/Button" to="." method="_on_start_Button_pressed"]
+[connection signal="pressed" from="MainMenu/TextureRect/VBoxContainer/TextureButton3/Button3" to="." method="_on_exit_Button_pressed"]
+[connection signal="mainmenu" from="Control" to="." method="_on_Control_mainmenu"]
+
+[editable path="MainMenu"]

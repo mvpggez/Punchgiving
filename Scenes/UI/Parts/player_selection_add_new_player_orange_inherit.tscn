@@ -1,0 +1,93 @@
+[gd_scene load_steps=11 format=2]
+
+[ext_resource path="res://Asset/UI/player_selection_background.png" type="Texture" id=1]
+[ext_resource path="res://Asset/UI/ui_disabled.png" type="Texture" id=2]
+[ext_resource path="res://Asset/Script/UI/scale_plus_button.gd" type="Script" id=3]
+[ext_resource path="res://Asset/Sound/AudioStreamPlayer_Button.tscn" type="PackedScene" id=4]
+
+[sub_resource type="DynamicFontData" id=1]
+font_path = "res://Asset/Font/MVP-Font-1_2_2.ttf"
+
+[sub_resource type="DynamicFont" id=2]
+size = 24
+font_data = SubResource( 1 )
+
+[sub_resource type="Shader" id=3]
+code = "shader_type canvas_item;
+
+uniform sampler2D gradient_color: hint_albedo; 
+
+void fragment()
+{
+	vec4 tex = texture(TEXTURE,UV);
+	float tex_to_grey = (tex.r+tex.g+tex.b)*0.33;
+	vec4 grey_to_gradient = texture(gradient_color, vec2(tex_to_grey, 0.0));
+	
+	COLOR.rgb = grey_to_gradient.rgb;
+	COLOR.a = tex.a;
+	
+}"
+
+[sub_resource type="Gradient" id=4]
+colors = PoolColorArray( 0.866667, 0.439216, 0.0117647, 1, 1, 1, 1, 1 )
+
+[sub_resource type="GradientTexture" id=5]
+gradient = SubResource( 4 )
+width = 256
+
+[sub_resource type="ShaderMaterial" id=6]
+shader = SubResource( 3 )
+shader_param/gradient_color = SubResource( 5 )
+
+[node name="player_selection_add_new_player_orange_inherit" type="TextureButton"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -640.0
+margin_top = -360.0
+margin_right = -90.0
+margin_bottom = -60.0
+rect_min_size = Vector2( 550, 300 )
+texture_normal = ExtResource( 1 )
+expand = true
+stretch_mode = 1
+
+[node name="Player_Name" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -90.0
+margin_top = 34.476
+margin_right = 90.0
+margin_bottom = 84.476
+rect_min_size = Vector2( 180, 50 )
+alignment = 1
+
+[node name="Label2" type="Label" parent="Player_Name"]
+margin_top = 13.0
+margin_right = 180.0
+margin_bottom = 37.0
+custom_fonts/font = SubResource( 2 )
+custom_colors/font_color = Color( 0.988235, 0.560784, 0.129412, 1 )
+text = "ADD NEW PLAYER"
+align = 1
+
+[node name="TextureButton" type="TextureButton" parent="."]
+material = SubResource( 6 )
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -50.3384
+margin_top = -49.0152
+margin_right = 49.6616
+margin_bottom = 50.9848
+rect_min_size = Vector2( 100, 100 )
+rect_rotation = 45.0
+rect_pivot_offset = Vector2( 50, 50 )
+mouse_filter = 1
+texture_normal = ExtResource( 2 )
+expand = true
+script = ExtResource( 3 )
+
+[node name="AudioStreamPlayer" parent="TextureButton" instance=ExtResource( 4 )]

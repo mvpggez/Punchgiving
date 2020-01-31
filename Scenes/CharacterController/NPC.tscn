@@ -1,0 +1,224 @@
+[gd_scene load_steps=2 format=2]
+
+[sub_resource type="GDScript" id=1]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends Node
+
+#NPC Behaviour concepts:
+#If the hand is punching, it skips the next two concepts
+#If there is a character in range, he hits him
+#If there is a present, he tries to reach it
+#If the NPC is on the floor, it tries to reach a platform
+
+#Please note, that this code was created under the pressure of a gamejam!
+#Most of the NPC-behaviour-patterns are basically a list of inputs based on magic numbers
+#Cover your eyes and proceed at your own risk!
+
+func move_to_x(x):
+	var diff = x - get_parent().translation.x
+	if diff > 1:
+		get_parent().moving_right = 1
+	elif diff < -1:
+		get_parent().moving_left = 1
+
+func get_location_from_transform(translation):
+	if translation.y > 20 and translation.x > -12 and translation.x < 12:
+		return \"platform1\"
+	elif translation.y > 10 and translation.x > 16 and translation.x < 38:
+		return \"platform2\"
+	elif translation.y > 10 and translation.x > -38 and translation.x < -16:
+		return \"platform3\"
+	else:
+		return \"ground\"
+
+var target = null
+var target_location = \"\"
+func get_nearest_present():
+	var collectables = get_tree().get_nodes_in_group(\"collectable\")
+	var collectable_dict = {\"platform1\":[],\"platform2\":[],\"platform3\":[],\"ground\":[]}
+	for collectable in collectables:
+		collectable_dict[get_location_from_transform(collectable.translation)].append(collectable)
+	if collectable_dict[my_location].size()>0:
+		var distance = 999
+		for collectable in collectable_dict[my_location]:
+			if collectable.translation.x - get_parent().translation.x < distance:
+				distance = collectable.translation.x - get_parent().translation.x
+				target = collectable
+	else:
+		match my_location:
+			\"ground\":
+				if get_parent().translation.x > 0:
+					target_location = \"platform2\"
+					if collectable_dict[\"platform2\"].size() == 0 and collectable_dict[\"platform3\"].size() > 0:
+						target_location = \"platform3\"
+					if get_parent().translation.y > 17:
+						target_location = \"platform1\"
+						my_location = \"platform2\"
+				else:
+					target_location = \"platform3\"
+					if collectable_dict[\"platform3\"].size() == 0 and collectable_dict[\"platform2\"].size() > 0:
+						target_location = \"platform2\"
+					if get_parent().translation.y > 17:
+						target_location = \"platform1\"
+						my_location = \"platform3\"
+			\"platform1\":
+				if collectable_dict[\"platform3\"].size() > 0:
+					target_location = \"platform3\"
+				if collectable_dict[\"platform2\"].size() > 0:
+					target_location = \"platform2\"
+				if collectable_dict[\"ground\"].size() > 0:
+					if get_parent().translation.x > 0:
+						target_location = \"platform2\"
+					else:
+						target_location = \"platform3\"
+						
+			\"platform2\":
+				if collectable_dict[\"platform3\"].size() > 0:
+					target_location = \"ground\"
+				if collectable_dict[\"ground\"].size() > 0:
+					target_location = \"ground\"
+				if collectable_dict[\"platform1\"].size() > 0:
+					target_location = \"platform1\"
+			\"platform3\":
+				if collectable_dict[\"platform2\"].size() > 0:
+					target_location = \"ground\"
+				if collectable_dict[\"ground\"].size() > 0:
+					target_location = \"ground\"
+				if collectable_dict[\"platform1\"].size() > 0:
+					target_location = \"platform1\"
+var my_location
+
+func is_between(f, start, end):
+	return (start < f and end > f)
+
+func is_in_area_list(f, areas):
+	for area in areas:
+		if is_between(f, area.x, area.y):
+			return true
+	return false
+
+#Jumping areas are float-tuple (vec2, x is left, y is right) defining the areas to initiate a jump to reach the target
+func jump_to(jumping_areas, flying_areas, target_position):
+	var nearest_area = null
+	var distance = 999
+	for area in jumping_areas:
+		if is_between(get_parent().translation.x, area.x, area.y) or get_parent().translation.y > target_position.y+3 or ((not get_parent().is_on_ground()) and is_in_area_list(get_parent().translation.x, flying_areas) and get_parent().translation.y > target_position.y-5):
+			#already in jumping area
+			get_parent().jumping = true
+			if target_position.x > get_parent().translation.x:
+				get_parent().moving_right = 1
+			else:
+				get_parent().moving_left = 1
+			return
+		else:
+			if abs(area.x - get_parent().translation.x) < distance:
+				nearest_area = area
+				distance = abs(area.x - get_parent().translation.x)
+			elif abs(area.y - get_parent().translation.x) < distance:
+				nearest_area = area
+				distance = abs(area.y - get_parent().translation.x)
+	#move to nearest area
+	if (nearest_area.x+nearest_area.y)/2 > get_parent().translation.x:
+		get_parent().moving_right = 1
+	else:
+		get_parent().moving_left = 1
+	
+func fall(edges):
+	var closest_edge = 99999
+	for edge in edges:
+		if abs(get_parent().translation.x-edge)<abs(get_parent().translation.x-closest_edge):
+			closest_edge = edge
+	move_to_x(closest_edge)
+		
+var scheduled_attack = false
+func _physics_process(delta):
+	target = null
+	target_location = \"\"
+	get_parent().moving_left = 0.0
+	get_parent().moving_right = 0.0
+	if get_parent().linear_velocity.y <= 0.5:
+		get_parent().jumping = false
+	else:
+		get_parent().jumping = true
+	get_parent().attacking = false
+	var hand = get_parent().get_parent().get_node(\"Hand\")
+	var hand_is_punching = (hand.state == hand.HandState.PUNCHING or hand.state == hand.HandState.MOVING_TO_PUNCH)
+	
+	if scheduled_attack:
+		get_parent().attacking = true
+		scheduled_attack = false
+		return
+	var characters = get_tree().get_nodes_in_group(\"character\")
+	var can_attack = []
+	for character in characters:
+		if not character == get_parent() and my_location == get_location_from_transform(character.translation):
+			can_attack.append(character)
+	var closest_character = null
+	var distance = 999
+	for character in can_attack:
+		if abs(get_parent().translation.x - character.translation.x) < distance:
+			distance = abs(get_parent().translation.x - character.translation.x)
+			closest_character = character
+
+	if not (hand_is_punching and my_location == \"ground\") and distance < 7 and abs(get_parent().translation.y - closest_character.translation.y) < 3 and get_parent().cooldown == 0:
+		move_to_x(closest_character.translation.x)
+		scheduled_attack = true
+		return	
+	
+	my_location = get_location_from_transform(get_parent().translation)
+	get_nearest_present()
+	if hand_is_punching and my_location == \"ground\":
+		if get_parent().translation.x > 0:
+			target = null
+			target_location = \"platform2\"
+		else:
+			target = null
+			target_location = \"platform3\"
+	if target:
+		move_to_x(target.translation.x)
+	elif target_location:
+		match my_location:
+			\"ground\":
+				match target_location:
+					\"platform2\":
+						jump_to([Vector2(4, 8), Vector2(44, 48)],[Vector2(4, 15), Vector2(37, 48)], Vector2(26, 10))
+					\"platform3\":
+						jump_to([Vector2(-8, -4), Vector2(-48, -44)],[Vector2(-15, -4), Vector2(-48, -37)], Vector2(-26, 10))
+			\"platform1\":
+				match target_location:
+					\"platform2\":
+						fall([13])
+					\"platform3\":
+						fall([-13])
+			\"platform2\":
+				match target_location:
+					\"ground\":
+						fall([14, 38])
+					\"platform1\":
+						jump_to([Vector2(17, 30)],[Vector2(5, 30)], Vector2(0, 20))
+			\"platform3\":
+				match target_location:
+					\"ground\":
+						fall([-38, -14])
+					\"platform1\":
+						jump_to([Vector2(-30, -17)],[Vector2(-30, -5)], Vector2(0, 20))
+	else:
+		match my_location:
+			\"ground\":
+				move_to_x(0)
+			\"platform1\":
+				move_to_x(0)
+			\"platform2\":
+				move_to_x(26)
+			\"platform3\":
+				move_to_x(-26)"
+
+[node name="NPC" type="Node"]
+script = SubResource( 1 )

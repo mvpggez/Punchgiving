@@ -1,0 +1,41 @@
+[gd_scene load_steps=2 format=2]
+
+[sub_resource type="GDScript" id=1]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends Node
+
+var player_id = 0 #unique player id, must be set before the object enters the tree
+
+var action_jump
+var action_left
+var action_right
+var action_attack
+
+
+func _ready():
+	action_jump = \"player_\"+str(player_id)+\"_jump\"
+	action_left = \"player_\"+str(player_id)+\"_left\"
+	action_right = \"player_\"+str(player_id)+\"_right\"
+	action_attack = \"player_\"+str(player_id)+\"_attack\"
+
+
+func _unhandled_input(event):
+	if event.is_action(action_left):
+		get_parent().moving_left = event.get_action_strength(action_left)
+	if event.is_action(action_right):
+		get_parent().moving_right = event.get_action_strength(action_right)
+	if event.is_action(action_jump):
+		get_parent().jumping = bool(event.get_action_strength(action_jump))
+	if event.is_action(action_attack):
+		get_parent().attacking = bool(event.get_action_strength(action_attack))
+"
+
+[node name="Player" type="Node"]
+script = SubResource( 1 )

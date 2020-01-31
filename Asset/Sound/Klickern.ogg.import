@@ -1,0 +1,15 @@
+[remap]
+
+importer="ogg_vorbis"
+type="AudioStreamOGGVorbis"
+path="res://.import/Klickern.ogg-7f6b908ef353242d0406d9c82c071b6b.oggstr"
+
+[deps]
+
+source_file="res://Asset/Sound/Klickern.ogg"
+dest_files=[ "res://.import/Klickern.ogg-7f6b908ef353242d0406d9c82c071b6b.oggstr" ]
+
+[params]
+
+loop=true
+loop_offset=0

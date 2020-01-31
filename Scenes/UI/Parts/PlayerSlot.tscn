@@ -1,0 +1,488 @@
+[gd_scene load_steps=9 format=2]
+
+[ext_resource path="res://Asset/UI/Placeholder/PlaceholderDude00.png" type="Texture" id=1]
+[ext_resource path="res://Asset/UI/Placeholder/PlaceholderDude01.png" type="Texture" id=2]
+[ext_resource path="res://Asset/UI/Placeholder/PlaceholderDude02.png" type="Texture" id=3]
+[ext_resource path="res://Asset/UI/Placeholder/PlaceholderDude03.png" type="Texture" id=4]
+[ext_resource path="res://Asset/UI/Placeholder/arrow1.png" type="Texture" id=5]
+[ext_resource path="res://Asset/UI/Placeholder/arrow3.png" type="Texture" id=6]
+[ext_resource path="res://Asset/UI/ui_label_1.png" type="Texture" id=7]
+
+[sub_resource type="GDScript" id=1]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends MarginContainer
+
+export (NodePath) var close_slot_container_nodepath
+export (NodePath) var settings_box_container_nodepath
+export (NodePath) var current_controll_label_nodepath
+export (NodePath) var current_beard_name_nodepath
+export (NodePath) var player_texture_rect_nodepath
+export (NodePath) var player_name_input_nodepath
+export (NodePath) var player_number_label_nodepath
+
+export (NodePath) var controls_assigned_warning_label_nodepath
+
+export (Array) var all_beard_types = [\"Moustache1\", \"Moustache2\", \"Moustache3\", \"MoustacheWhitebeardNewgate1\", \"MoustacheWhitebeardNewgate2\", \"MoustacheWhitebeardNewgate3\"] 
+export (Array) var player_textures_list = [Texture, Texture, Texture, Texture]
+
+export (int, \"1\",\"2\",\"3\",\"4\") var player_number
+
+export (Color) var player_00_color
+export (Color) var player_01_color
+export (Color) var player_02_color
+export (Color) var player_03_color
+
+signal set_controls
+
+var player_color_list = [] #= [player_00_color, player_01_color, player_02_color, player_03_color]
+
+var status = \"open\" # \"open\", \"closed\"
+
+var control_status = \"human\" # \"human\", \"ai\"
+var beard_index = 0
+var current_beard = all_beard_types[0]
+var player_name = \"Brownie\"
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	GetReady()
+	pass # Replace with function body.
+
+func GetReady():
+	#get_node(player_texture_rect_nodepath).texture = player_textures_list[player_number]
+	
+	player_color_list.append(player_00_color)
+	player_color_list.append(player_01_color)
+	player_color_list.append(player_02_color)
+	player_color_list.append(player_03_color)
+	
+	if player_number > 0:
+		player_name = \"Brownie\" + str(player_number)
+	
+	get_node(player_name_input_nodepath).text = str(player_name)
+	
+	get_node(player_number_label_nodepath).text = \"Player \" + str(player_number + 1)
+	get_node(player_number_label_nodepath).set(\"custom_colors/font_color\", player_color_list[player_number])
+	
+func GetPlayerName():
+	player_name = get_node(player_name_input_nodepath).text
+
+func CloseSlot():
+	status = \"closed\"
+	get_node(settings_box_container_nodepath).hide()
+	get_node(close_slot_container_nodepath).show()
+
+func OpenSlot():
+	status = \"open\"
+	get_node(settings_box_container_nodepath).show()
+	get_node(close_slot_container_nodepath).hide()
+
+func SwitchControls():
+	if control_status == \"human\":
+		control_status = \"ai\"
+		get_node(current_controll_label_nodepath).text = \"Computer\"
+	elif control_status == \"ai\":
+		control_status = \"human\"
+		get_node(current_controll_label_nodepath).text = \"Human\"
+
+func SetBeardSelection(INDEX_COUNT):
+	var maximum_beards = all_beard_types.size()
+	
+	if beard_index + INDEX_COUNT < 0:
+		beard_index = maximum_beards - 1
+	elif beard_index + INDEX_COUNT > maximum_beards - 1:
+		beard_index = 0
+	else:
+		beard_index = beard_index + INDEX_COUNT
+		
+	current_beard = all_beard_types[beard_index]
+	get_node(current_beard_name_nodepath).text = all_beard_types[beard_index]
+
+func SetControlsAssignedText():
+	get_node(controls_assigned_warning_label_nodepath).text = \"Controls are assigned\"
+	get_node(controls_assigned_warning_label_nodepath).set(\"custom_colors/font_color\", Color(0,240,0))
+	
+
+func AssignControls():
+	GetPlayerName()
+	emit_signal(\"set_controls\", self, player_name, player_number, player_color_list[player_number])
+	
+	SetControlsAssignedText()
+	
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+#func _process(delta):
+#	pass
+
+func _on_OpenSlotButton_pressed():
+	OpenSlot()
+
+func _on_CloseSlotButton_pressed():
+	CloseSlot()
+
+func _on_ForwardControllSelectionButton_pressed():
+	SwitchControls()
+
+func _on_BackwardControllSelectionButton_pressed():
+	SwitchControls()
+
+func _on_ForwardBeardSelectionButton_pressed():
+	SetBeardSelection(1)
+
+func _on_BackwardBeardSelectionButton_pressed():
+	SetBeardSelection(-1)
+
+func _on_AssignControlsButton_pressed():
+	AssignControls()
+"
+
+[node name="PlayerSlot" type="MarginContainer"]
+margin_right = 40.0
+margin_bottom = 40.0
+script = SubResource( 1 )
+close_slot_container_nodepath = NodePath("CloseButtonCenterContainer")
+settings_box_container_nodepath = NodePath("SettingsBoxContainer")
+current_controll_label_nodepath = NodePath("SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer/CurrentControllLabel")
+current_beard_name_nodepath = NodePath("SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer/BeardNameLabel")
+player_texture_rect_nodepath = NodePath("SettingsBoxContainer/CenterContainer/HBoxContainer/PlayerTextureRect")
+player_name_input_nodepath = NodePath("SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer/NameInputLineEdit")
+player_number_label_nodepath = NodePath("SettingsBoxContainer/CenterContainer4/PlayerNumberLabel")
+controls_assigned_warning_label_nodepath = NodePath("SettingsBoxContainer/MarginContainer2/CenterContainer/ControlsAssigndWarningLabel")
+player_textures_list = [ ExtResource( 1 ), ExtResource( 2 ), ExtResource( 3 ), ExtResource( 4 ) ]
+player_00_color = Color( 0.184314, 0.678431, 0.0666667, 1 )
+player_01_color = Color( 0.752941, 0.803922, 0.145098, 1 )
+player_02_color = Color( 0.145098, 0.180392, 0.678431, 1 )
+player_03_color = Color( 0.937255, 0.00784314, 0.901961, 1 )
+
+[node name="CloseButtonCenterContainer" type="CenterContainer" parent="."]
+editor/display_folded = true
+visible = false
+margin_right = 292.0
+margin_bottom = 295.0
+
+[node name="ClosingSizeMarginContainer" type="MarginContainer" parent="CloseButtonCenterContainer"]
+margin_left = 43.0
+margin_top = 72.0
+margin_right = 248.0
+margin_bottom = 222.0
+custom_constants/margin_right = 65
+custom_constants/margin_top = 65
+custom_constants/margin_left = 65
+custom_constants/margin_bottom = 65
+
+[node name="OpenSlotButton" type="Button" parent="CloseButtonCenterContainer/ClosingSizeMarginContainer"]
+margin_left = 65.0
+margin_top = 65.0
+margin_right = 140.0
+margin_bottom = 85.0
+text = "Open Slot"
+
+[node name="SettingsBoxContainer" type="VBoxContainer" parent="."]
+editor/display_folded = true
+margin_right = 292.0
+margin_bottom = 295.0
+
+[node name="CenterContainer4" type="CenterContainer" parent="SettingsBoxContainer"]
+editor/display_folded = true
+margin_right = 292.0
+margin_bottom = 14.0
+
+[node name="PlayerNumberLabel" type="Label" parent="SettingsBoxContainer/CenterContainer4"]
+margin_left = 120.0
+margin_right = 171.0
+margin_bottom = 14.0
+text = "Player 1"
+
+[node name="CenterContainer2" type="CenterContainer" parent="SettingsBoxContainer"]
+editor/display_folded = true
+margin_top = 18.0
+margin_right = 292.0
+margin_bottom = 66.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SettingsBoxContainer/CenterContainer2"]
+margin_left = 58.0
+margin_right = 234.0
+margin_bottom = 48.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer"]
+margin_right = 176.0
+margin_bottom = 24.0
+
+[node name="Label2" type="Label" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer"]
+margin_top = 5.0
+margin_right = 38.0
+margin_bottom = 19.0
+text = "Name"
+
+[node name="VSeparator" type="VSeparator" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer"]
+margin_left = 42.0
+margin_right = 46.0
+margin_bottom = 24.0
+
+[node name="NameInputLineEdit" type="LineEdit" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer"]
+margin_left = 50.0
+margin_right = 170.0
+margin_bottom = 24.0
+rect_min_size = Vector2( 120, 0 )
+align = 1
+max_length = 48
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer"]
+margin_top = 28.0
+margin_right = 176.0
+margin_bottom = 48.0
+
+[node name="Label2" type="Label" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2"]
+margin_top = 3.0
+margin_right = 46.0
+margin_bottom = 17.0
+text = "Control"
+
+[node name="VSeparator" type="VSeparator" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2"]
+margin_left = 50.0
+margin_right = 54.0
+margin_bottom = 20.0
+
+[node name="CenterContainer2" type="CenterContainer" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2"]
+margin_left = 58.0
+margin_right = 78.0
+margin_bottom = 20.0
+
+[node name="TextureButton" type="TextureButton" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer2"]
+margin_right = 20.0
+margin_bottom = 20.0
+rect_min_size = Vector2( 20, 20 )
+mouse_filter = 2
+texture_normal = ExtResource( 5 )
+expand = true
+stretch_mode = 5
+
+[node name="ForwardControllSelectionButton" type="Button" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer2"]
+margin_right = 20.0
+margin_bottom = 20.0
+text = "<"
+flat = true
+
+[node name="CenterContainer" type="CenterContainer" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2"]
+editor/display_folded = true
+margin_left = 82.0
+margin_right = 152.0
+margin_bottom = 20.0
+
+[node name="CurrentControllLabel" type="Label" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer"]
+margin_left = 12.0
+margin_top = 3.0
+margin_right = 58.0
+margin_bottom = 17.0
+text = "Human"
+
+[node name="MarginContainer" type="MarginContainer" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer"]
+margin_top = 10.0
+margin_right = 70.0
+margin_bottom = 10.0
+custom_constants/margin_right = 70
+
+[node name="CenterContainer3" type="CenterContainer" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2"]
+margin_left = 156.0
+margin_right = 176.0
+margin_bottom = 20.0
+
+[node name="TextureButton2" type="TextureButton" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer3"]
+margin_right = 20.0
+margin_bottom = 20.0
+rect_min_size = Vector2( 20, 20 )
+texture_normal = ExtResource( 6 )
+expand = true
+stretch_mode = 5
+
+[node name="BackwardControllSelectionButton" type="Button" parent="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer3"]
+margin_right = 20.0
+margin_bottom = 20.0
+text = ">"
+flat = true
+
+[node name="HSeparator" type="HSeparator" parent="SettingsBoxContainer"]
+margin_top = 70.0
+margin_right = 292.0
+margin_bottom = 74.0
+
+[node name="CenterContainer" type="CenterContainer" parent="SettingsBoxContainer"]
+margin_top = 78.0
+margin_right = 292.0
+margin_bottom = 161.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="SettingsBoxContainer/CenterContainer"]
+margin_left = 34.0
+margin_right = 257.0
+margin_bottom = 83.0
+
+[node name="PlayerTextureRect" type="TextureRect" parent="SettingsBoxContainer/CenterContainer/HBoxContainer"]
+margin_right = 59.0
+margin_bottom = 83.0
+texture = ExtResource( 1 )
+
+[node name="CenterContainer5" type="CenterContainer" parent="SettingsBoxContainer/CenterContainer/HBoxContainer"]
+margin_left = 63.0
+margin_right = 223.0
+margin_bottom = 83.0
+
+[node name="TextureButton" type="TextureButton" parent="SettingsBoxContainer/CenterContainer/HBoxContainer/CenterContainer5"]
+margin_top = 6.0
+margin_right = 160.0
+margin_bottom = 76.0
+rect_min_size = Vector2( 160, 70 )
+texture_normal = ExtResource( 7 )
+expand = true
+stretch_mode = 5
+
+[node name="AssignControlsButton" type="Button" parent="SettingsBoxContainer/CenterContainer/HBoxContainer/CenterContainer5"]
+margin_left = 26.0
+margin_top = 31.0
+margin_right = 133.0
+margin_bottom = 51.0
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "AssignControls"
+flat = true
+
+[node name="HSeparator2" type="HSeparator" parent="SettingsBoxContainer"]
+margin_top = 165.0
+margin_right = 292.0
+margin_bottom = 169.0
+
+[node name="CenterContainer3" type="CenterContainer" parent="SettingsBoxContainer"]
+margin_top = 173.0
+margin_right = 292.0
+margin_bottom = 193.0
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="SettingsBoxContainer/CenterContainer3"]
+margin_right = 292.0
+margin_bottom = 20.0
+
+[node name="Label2" type="Label" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2"]
+margin_top = 3.0
+margin_right = 72.0
+margin_bottom = 17.0
+text = "Beard Style"
+
+[node name="VSeparator" type="VSeparator" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2"]
+margin_left = 76.0
+margin_right = 80.0
+margin_bottom = 20.0
+
+[node name="CenterContainer2" type="CenterContainer" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2"]
+margin_left = 84.0
+margin_right = 104.0
+margin_bottom = 20.0
+
+[node name="TextureButton2" type="TextureButton" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer2"]
+margin_right = 20.0
+margin_bottom = 20.0
+rect_min_size = Vector2( 20, 20 )
+texture_normal = ExtResource( 5 )
+expand = true
+stretch_mode = 5
+
+[node name="BackwardBeardSelectionButton" type="Button" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer2"]
+margin_right = 20.0
+margin_bottom = 20.0
+text = "<"
+flat = true
+
+[node name="CenterContainer" type="CenterContainer" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2"]
+editor/display_folded = true
+margin_left = 108.0
+margin_right = 268.0
+margin_bottom = 20.0
+
+[node name="BeardNameLabel" type="Label" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer"]
+margin_left = 45.0
+margin_top = 3.0
+margin_right = 115.0
+margin_bottom = 17.0
+text = "Moustache"
+
+[node name="MarginContainer" type="MarginContainer" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer"]
+margin_top = 10.0
+margin_right = 160.0
+margin_bottom = 10.0
+custom_constants/margin_right = 160
+
+[node name="CenterContainer3" type="CenterContainer" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2"]
+margin_left = 272.0
+margin_right = 292.0
+margin_bottom = 20.0
+
+[node name="TextureButton3" type="TextureButton" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer3"]
+margin_right = 20.0
+margin_bottom = 20.0
+rect_min_size = Vector2( 20, 20 )
+texture_normal = ExtResource( 6 )
+expand = true
+stretch_mode = 5
+
+[node name="ForwardBeardSelectionButton" type="Button" parent="SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer3"]
+margin_right = 20.0
+margin_bottom = 20.0
+text = ">"
+flat = true
+
+[node name="MarginContainer2" type="MarginContainer" parent="SettingsBoxContainer"]
+margin_top = 197.0
+margin_right = 292.0
+margin_bottom = 231.0
+custom_constants/margin_top = 10
+custom_constants/margin_bottom = 10
+
+[node name="CenterContainer" type="CenterContainer" parent="SettingsBoxContainer/MarginContainer2"]
+margin_top = 10.0
+margin_right = 292.0
+margin_bottom = 24.0
+
+[node name="ControlsAssigndWarningLabel" type="Label" parent="SettingsBoxContainer/MarginContainer2/CenterContainer"]
+margin_left = 63.0
+margin_right = 229.0
+margin_bottom = 14.0
+custom_colors/font_color = Color( 1, 0, 0, 1 )
+text = "Controls are not assigned!"
+
+[node name="MarginContainer" type="MarginContainer" parent="SettingsBoxContainer"]
+margin_top = 235.0
+margin_right = 292.0
+margin_bottom = 295.0
+
+[node name="CenterContainer" type="CenterContainer" parent="SettingsBoxContainer/MarginContainer"]
+margin_right = 292.0
+margin_bottom = 60.0
+
+[node name="TextureButton" type="TextureButton" parent="SettingsBoxContainer/MarginContainer/CenterContainer"]
+margin_left = 86.0
+margin_right = 206.0
+margin_bottom = 60.0
+rect_min_size = Vector2( 120, 60 )
+texture_normal = ExtResource( 7 )
+expand = true
+stretch_mode = 5
+
+[node name="CloseSlotButton" type="Button" parent="SettingsBoxContainer/MarginContainer/CenterContainer"]
+margin_left = 108.0
+margin_top = 20.0
+margin_right = 183.0
+margin_bottom = 40.0
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "Close Slot"
+flat = true
+[connection signal="pressed" from="CloseButtonCenterContainer/ClosingSizeMarginContainer/OpenSlotButton" to="." method="_on_OpenSlotButton_pressed"]
+[connection signal="pressed" from="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer2/ForwardControllSelectionButton" to="." method="_on_ForwardControllSelectionButton_pressed"]
+[connection signal="pressed" from="SettingsBoxContainer/CenterContainer2/VBoxContainer/HBoxContainer2/CenterContainer3/BackwardControllSelectionButton" to="." method="_on_BackwardControllSelectionButton_pressed"]
+[connection signal="pressed" from="SettingsBoxContainer/CenterContainer/HBoxContainer/CenterContainer5/AssignControlsButton" to="." method="_on_AssignControlsButton_pressed"]
+[connection signal="pressed" from="SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer2/BackwardBeardSelectionButton" to="." method="_on_BackwardBeardSelectionButton_pressed"]
+[connection signal="pressed" from="SettingsBoxContainer/CenterContainer3/HBoxContainer2/CenterContainer3/ForwardBeardSelectionButton" to="." method="_on_ForwardBeardSelectionButton_pressed"]
+[connection signal="pressed" from="SettingsBoxContainer/MarginContainer/CenterContainer/CloseSlotButton" to="." method="_on_CloseSlotButton_pressed"]

@@ -1,0 +1,443 @@
+[gd_scene load_steps=42 format=2]
+
+[ext_resource path="res://Scenes/World/Collectable/LargePresent.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Scenes/World/Collectable/Present.tscn" type="PackedScene" id=2]
+[ext_resource path="res://Asset/Model/Player.tscn" type="PackedScene" id=3]
+
+[sub_resource type="GDScript" id=1]
+script/source = "#########################################################
+# Copyright (C) 2019-2020 MVP Good Games Easy UG (haftungsbeschränkt) - All Rights Reserved
+# E-Mail: info@mvpggez.com
+# 
+# This file is part of the game \"Punchgiving\".
+# Full source code is available at https://github.com/mvpggez/PunchGiving
+#########################################################
+
+extends RigidBody
+
+export var movement_speed = 10
+export var jump_speed = 10
+export var stun_factor = 1
+export (int) var character_id = 0
+export (Material) var body_material = null
+export (Material) var hat_material = null
+export (Array, PackedScene) var spawnable_collectables = []
+var spawnable_collectable_scenes = []
+
+var score = 0	#Current score of the character
+var character_name = \"CharacterName\"
+#Controls
+var moving_left = 0.0 #Float from 0.0 to 1.0, indicating, how fast the player is going (controller support)
+var moving_right = 0.0 #Float from 0.0 to 1.0, indicating, how fast the player is going (controller support)
+var jumping = false #Is the player pressing jump?
+var attacking = false #Is the player pressing attack?
+
+#State
+var stunned = 0.0 #time in seconds the player is remaining stunned
+var cooldown = 0.0 #remaining cooldown of the attack in seconds
+var attack_in_progress = false
+var charge_time = 0.0
+var attack_time = 0.0
+var looking_left = true
+
+enum EyeType {ATTACK, NORMAL, X, HAPPY}
+var current_eye_type = EyeType.NORMAL
+var last_present_collected = 0.0 #time, when the last present was collected
+var time = 0.0
+func _ready():
+	add_to_group(\"points_of_interest\")
+	add_to_group(\"character\")
+	for packed_scene in spawnable_collectables:
+		spawnable_collectable_scenes.append(packed_scene.instance())
+	
+	$PlayerMesh/AnimationPlayer.get_animation(\"player_walk_2_to_left\").set_loop(true)
+	$PlayerMesh/AnimationPlayer.get_animation(\"player_walk_2_to_right\").set_loop(true)
+	var state_machine = $PlayerMesh/AnimationTree[\"parameters/playback\"]
+	state_machine.start(\"standing_left\")
+	
+	if body_material:
+		$PlayerMesh/armature_player/player_body.material_override = body_material
+	if hat_material:
+		$PlayerMesh/armature_player/player_hat.material_override = hat_material
+	
+
+func set_eye_type(new_eye_type):
+	$PlayerMesh/armature_player/eye_attack_L.visible = false
+	$PlayerMesh/armature_player/eye_attack_R.visible = false
+	$PlayerMesh/armature_player/eye_x_L.visible = false
+	$PlayerMesh/armature_player/eye_x_R.visible = false
+	$PlayerMesh/armature_player/eye_normal_L.visible = false
+	$PlayerMesh/armature_player/eye_normal_R.visible = false
+	$PlayerMesh/armature_player/eye_happy_L.visible = false
+	$PlayerMesh/armature_player/eye_happy_R.visible = false
+	
+	match new_eye_type:
+		EyeType.NORMAL:
+			$PlayerMesh/armature_player/eye_normal_L.visible = true
+			$PlayerMesh/armature_player/eye_normal_R.visible = true
+		EyeType.X:
+			$PlayerMesh/armature_player/eye_x_L.visible = true
+			$PlayerMesh/armature_player/eye_x_R.visible = true
+		EyeType.ATTACK:
+			$PlayerMesh/armature_player/eye_attack_L.visible = true
+			$PlayerMesh/armature_player/eye_attack_R.visible = true
+		EyeType.HAPPY:
+			$PlayerMesh/armature_player/eye_happy_L.visible = true
+			$PlayerMesh/armature_player/eye_happy_R.visible = true
+	current_eye_type = new_eye_type
+
+func _process(delta):
+	if current_eye_type == EyeType.HAPPY and time-last_present_collected>0.7:
+		set_eye_type(EyeType.NORMAL)
+		
+	var state_machine = $PlayerMesh/AnimationTree[\"parameters/playback\"]
+	if attack_in_progress:
+		if looking_left:
+			state_machine.travel(\"attack_left\")
+		else:
+			state_machine.travel(\"attack_right\")
+	else:
+		if linear_velocity.x < 0 and stunned == 0:
+			if abs(linear_velocity.y) > 1:
+				state_machine.travel(\"fall_left\")
+			else:
+				state_machine.travel(\"walking_left\")
+			looking_left = true
+		elif linear_velocity.x > 0 and stunned == 0:
+			if abs(linear_velocity.y) > 1:
+				state_machine.travel(\"fall_right\")
+			else:
+				state_machine.travel(\"walking_right\")
+			looking_left = false
+		else:
+			if looking_left:
+				state_machine.travel(\"standing_left\")
+			else:
+				state_machine.travel(\"standing_right\")
+var jumped_last_update = false
+func _integrate_forces(state):
+	if stunned == 0:
+		if cooldown == 0 and attacking:
+			cooldown = 5.0
+			charge_time = 0.5
+			attack_time = 1.0
+			attack_in_progress = true
+			set_eye_type(EyeType.ATTACK)
+		if attack_in_progress:
+			if charge_time == 0 and attack_in_progress:
+				if looking_left:
+					linear_velocity.x = -80.0
+					for body in get_colliding_bodies():
+						if body.is_in_group(\"character\"):
+							body.hit(3,false)
+							set_eye_type(EyeType.NORMAL)
+							attack_in_progress = false
+							break
+				else:
+					linear_velocity.x = 80.0
+					for body in get_colliding_bodies():
+						if body.is_in_group(\"character\"):
+							body.hit(3,true)
+							set_eye_type(EyeType.NORMAL)
+							attack_in_progress = false
+							break
+				if attack_time == 0:
+					attack_in_progress = false
+					set_eye_type(EyeType.NORMAL)
+					linear_velocity.x = 0.0
+					
+		else:
+			if $LeftObstacleArea.get_overlapping_bodies():
+				if $RightObstacleArea.get_overlapping_bodies():
+					pass
+				else:
+					linear_velocity.x = movement_speed*(moving_right)
+			elif $RightObstacleArea.get_overlapping_bodies():
+				linear_velocity.x = movement_speed*(-moving_left)
+			else:
+				linear_velocity.x = movement_speed*(moving_right-moving_left)
+			if jumped_last_update and not jumping and linear_velocity.y > 0:
+				linear_velocity.y *= 0.3
+			if $OnGroundArea.get_overlapping_bodies():
+				if jumping:
+					linear_velocity.y = jump_speed
+	jumped_last_update = jumping
+
+
+func _physics_process(delta):
+	time += delta
+	cooldown -= delta
+	cooldown = max(cooldown, 0)
+	charge_time -= delta
+	charge_time = max(charge_time, 0)
+	attack_time -= delta
+	attack_time = max(attack_time, 0)
+	if stunned > 0:
+		stunned -= delta
+		if stunned < 2.95:
+			pass
+	if stunned < 0:
+		stunned = 0
+		set_eye_type(EyeType.NORMAL)
+		axis_lock_angular_x = true
+		axis_lock_angular_y = true
+		axis_lock_angular_z = true
+		rotation = Vector3(0,0,0)
+	var bodies = $CollectionArea.get_overlapping_bodies()
+	for body in bodies:
+		if \"collectable\" in body:
+			body.collected_by(self)
+
+
+func drop_present(to_left):
+	var present = spawnable_collectable_scenes[randi()%spawnable_collectable_scenes.size()].duplicate()
+	get_parent().add_child(present)
+	present.translation = translation
+	if to_left:
+		present.linear_velocity = Vector3(-(randf()*10+5),randf()*10+5, 0)
+	else:
+		present.linear_velocity = Vector3((randf()*10+5),randf()*10+5, 0)
+	present.countdown = 2.0
+
+#the player is thrown in the direction he was hit. from_left=false assumes from right
+func hit(power, from_left):
+	attack_in_progress = false
+	if from_left:
+		linear_velocity = Vector3(10,10,0)*power
+	else:
+		linear_velocity = Vector3(-10,10,0)*power
+	stunned = stun_factor * power
+	set_eye_type(EyeType.X)
+	axis_lock_angular_x = false
+	axis_lock_angular_y = false
+	axis_lock_angular_z = false
+	randomize()
+	angular_velocity = Vector3(randf()*20-10,randf()*20-10,randf()*20-10)
+	if score < power:
+		for i in range(score):
+			drop_present(not from_left)
+		score = 0
+	else:
+		score -= power
+		for i in range(power):
+			drop_present(not from_left)
+			
+func add_score():
+	score += 1
+	last_present_collected = time
+	set_eye_type(EyeType.HAPPY)
+	
+func is_on_ground():
+	if $OnGroundArea.get_overlapping_bodies():
+		return true
+	else:
+		return false"
+
+[sub_resource type="CapsuleShape" id=2]
+height = 0.8
+
+[sub_resource type="SphereShape" id=3]
+radius = 0.776492
+
+[sub_resource type="AnimationNodeAnimation" id=4]
+animation = "player_attack_run_1_L"
+
+[sub_resource type="AnimationNodeAnimation" id=5]
+animation = "player_attack_run_1_R"
+
+[sub_resource type="AnimationNodeAnimation" id=6]
+animation = "player_walk_first_frame_L"
+
+[sub_resource type="AnimationNodeAnimation" id=7]
+animation = "player_walk_first_frame_R"
+
+[sub_resource type="AnimationNodeAnimation" id=8]
+animation = "player_walk_first_frame_L"
+
+[sub_resource type="AnimationNodeAnimation" id=9]
+animation = "player_walk_first_frame_R"
+
+[sub_resource type="AnimationNodeAnimation" id=10]
+animation = "player_walk_2_to_left"
+
+[sub_resource type="AnimationNodeTimeScale" id=11]
+
+[sub_resource type="AnimationNodeBlendTree" id=12]
+graph_offset = Vector2( -194.447, 63.5 )
+nodes/Animation/node = SubResource( 10 )
+nodes/Animation/position = Vector2( -80, 160 )
+nodes/TimeScale/node = SubResource( 11 )
+nodes/TimeScale/position = Vector2( 220, 140 )
+nodes/output/position = Vector2( 400, 140 )
+node_connections = [ "output", 0, "TimeScale", "TimeScale", 0, "Animation" ]
+
+[sub_resource type="AnimationNodeAnimation" id=13]
+animation = "player_walk_2_to_right"
+
+[sub_resource type="AnimationNodeTimeScale" id=14]
+
+[sub_resource type="AnimationNodeBlendTree" id=15]
+nodes/Animation/node = SubResource( 13 )
+nodes/Animation/position = Vector2( 100, 60 )
+nodes/TimeScale/node = SubResource( 14 )
+nodes/TimeScale/position = Vector2( 380, 60 )
+nodes/output/position = Vector2( 580, 60 )
+node_connections = [ "output", 0, "TimeScale", "TimeScale", 0, "Animation" ]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=16]
+xfade_time = 0.2
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=17]
+xfade_time = 0.2
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=18]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=19]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=20]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=21]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=22]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=23]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=24]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=25]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=26]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=27]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=28]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=29]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=30]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=31]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=32]
+
+[sub_resource type="AnimationNodeStateMachineTransition" id=33]
+
+[sub_resource type="AnimationNodeStateMachine" id=34]
+states/attack_left/node = SubResource( 4 )
+states/attack_left/position = Vector2( -187.139, 206.389 )
+states/attack_right/node = SubResource( 5 )
+states/attack_right/position = Vector2( 1085.86, 170.434 )
+states/fall_left/node = SubResource( 6 )
+states/fall_left/position = Vector2( 170.742, 170.434 )
+states/fall_right/node = SubResource( 7 )
+states/fall_right/position = Vector2( 787.703, 155.912 )
+states/standing_left/node = SubResource( 8 )
+states/standing_left/position = Vector2( 242, 108.389 )
+states/standing_right/node = SubResource( 9 )
+states/standing_right/position = Vector2( 649, 108.389 )
+states/walking_left/node = SubResource( 12 )
+states/walking_left/position = Vector2( 379, 206.389 )
+states/walking_right/node = SubResource( 15 )
+states/walking_right/position = Vector2( 649, 194 )
+transitions = [ "walking_left", "walking_right", SubResource( 16 ), "walking_right", "walking_left", SubResource( 17 ), "standing_left", "walking_left", SubResource( 18 ), "walking_left", "standing_left", SubResource( 19 ), "standing_right", "walking_right", SubResource( 20 ), "walking_right", "standing_right", SubResource( 21 ), "walking_left", "attack_left", SubResource( 22 ), "standing_left", "attack_left", SubResource( 23 ), "standing_right", "attack_right", SubResource( 24 ), "walking_right", "attack_right", SubResource( 25 ), "standing_left", "fall_left", SubResource( 26 ), "walking_left", "fall_left", SubResource( 27 ), "standing_right", "fall_right", SubResource( 28 ), "fall_right", "standing_right", SubResource( 29 ), "walking_right", "fall_right", SubResource( 30 ), "fall_right", "walking_right", SubResource( 31 ), "fall_left", "standing_left", SubResource( 32 ), "fall_left", "walking_left", SubResource( 33 ) ]
+start_node = "standing_left"
+graph_offset = Vector2( -525.672, 36.9123 )
+
+[sub_resource type="AnimationNodeStateMachinePlayback" id=35]
+
+[sub_resource type="RayShape" id=36]
+
+[sub_resource type="CapsuleShape" id=37]
+height = 1.3
+
+[sub_resource type="CapsuleShape" id=38]
+height = 0.7
+
+[node name="Character" type="RigidBody"]
+collision_layer = 2
+collision_mask = 3
+gravity_scale = 6.0
+contacts_reported = 3
+contact_monitor = true
+can_sleep = false
+axis_lock_linear_z = true
+axis_lock_angular_x = true
+axis_lock_angular_y = true
+axis_lock_angular_z = true
+script = SubResource( 1 )
+movement_speed = 20
+jump_speed = 40
+spawnable_collectables = [ ExtResource( 1 ), ExtResource( 2 ) ]
+
+[node name="CollisionShape" type="CollisionShape" parent="."]
+transform = Transform( 1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.100586, 0 )
+shape = SubResource( 2 )
+
+[node name="CollisionShape2" type="CollisionShape" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.61626, 0 )
+shape = SubResource( 3 )
+
+[node name="PlayerMesh" parent="." instance=ExtResource( 3 )]
+editor/display_folded = true
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.17331, 0 )
+
+[node name="eye_normal_L" parent="PlayerMesh/armature_player" index="4"]
+visible = true
+
+[node name="eye_normal_R" parent="PlayerMesh/armature_player" index="5"]
+visible = true
+
+[node name="eye_happy_L" parent="PlayerMesh/armature_player" index="6"]
+visible = false
+
+[node name="eye_happy_R" parent="PlayerMesh/armature_player" index="7"]
+visible = false
+
+[node name="AnimationTree" type="AnimationTree" parent="PlayerMesh"]
+tree_root = SubResource( 34 )
+anim_player = NodePath("../AnimationPlayer")
+active = true
+parameters/playback = SubResource( 35 )
+parameters/walking_left/TimeScale/scale = 2.0
+parameters/walking_right/TimeScale/scale = 2.0
+
+[node name="OnGroundArea" type="Area" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.531938, 0 )
+collision_layer = 0
+
+[node name="CollisionShape" type="CollisionShape" parent="OnGroundArea"]
+transform = Transform( 1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0 )
+shape = SubResource( 36 )
+
+[node name="CollectionArea" type="Area" parent="."]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape" type="CollisionShape" parent="CollectionArea"]
+transform = Transform( 1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.634216, 0 )
+shape = SubResource( 37 )
+
+[node name="LeftObstacleArea" type="Area" parent="."]
+collision_layer = 0
+
+[node name="CollisionShape" type="CollisionShape" parent="LeftObstacleArea"]
+transform = Transform( 1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, -0.0992661, 0.25238, 0 )
+shape = SubResource( 38 )
+
+[node name="RightObstacleArea" type="Area" parent="."]
+collision_layer = 0
+
+[node name="CollisionShape" type="CollisionShape" parent="RightObstacleArea"]
+transform = Transform( 1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0.123703, 0.25238, 0 )
+shape = SubResource( 38 )
+
+[node name="NamePositionLeft" type="Position3D" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2.13509, 4.7319, 0 )
+
+[node name="NamePositionRight" type="Position3D" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 2.11689, 4.7319, 0 )
+
+[node name="NamePositionLeftDown" type="Position3D" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2.13509, 3.39188, 0 )
+
+[editable path="PlayerMesh"]

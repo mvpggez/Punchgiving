@@ -1,0 +1,68 @@
+[gd_scene load_steps=7 format=2]
+
+[ext_resource path="res://Scenes/UI/dummy_tex.png" type="Texture" id=1]
+[ext_resource path="res://Asset/UI/ui_player_settings_background.png" type="Texture" id=2]
+[ext_resource path="res://Asset/Font/MVP-Font-1_2_2.ttf" type="DynamicFontData" id=3]
+
+[sub_resource type="StyleBoxTexture" id=1]
+texture = ExtResource( 2 )
+region_rect = Rect2( 0, 0, 550, 400 )
+
+[sub_resource type="DynamicFont" id=2]
+size = 24
+font_data = ExtResource( 3 )
+
+[sub_resource type="DynamicFont" id=3]
+size = 20
+font_data = ExtResource( 3 )
+
+[node name="player_assign_controls" type="TextureRect"]
+self_modulate = Color( 1, 1, 1, 0.729412 )
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -640.0
+margin_top = -360.0
+margin_right = -90.0
+margin_bottom = -60.0
+rect_min_size = Vector2( 550, 300 )
+mouse_filter = 0
+texture = ExtResource( 1 )
+expand = true
+stretch_mode = 1
+
+[node name="Panel" type="Panel" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -100.0
+margin_top = -50.0
+margin_right = 100.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 200, 100 )
+custom_styles/panel = SubResource( 1 )
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_constants/separation = 12
+alignment = 1
+
+[node name="Action" type="Label" parent="Panel/VBoxContainer"]
+margin_top = 38.0
+margin_right = 200.0
+margin_bottom = 62.0
+custom_fonts/font = SubResource( 2 )
+text = "Key: Jump"
+align = 1
+
+[node name="PressedKey" type="Label" parent="Panel/VBoxContainer"]
+visible = false
+margin_top = 58.0
+margin_right = 200.0
+margin_bottom = 78.0
+custom_fonts/font = SubResource( 3 )
+text = "Press Key"
+align = 1
